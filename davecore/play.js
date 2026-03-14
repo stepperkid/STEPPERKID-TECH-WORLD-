@@ -2,90 +2,89 @@ const fs = require("fs");
 const axios = require('axios');
 const yts = require('yt-search');
 const path = require('path');
-const fetch = require('node-fetch');
+
+const CYPHERX_BASE = 'https://media.cypherxbot.space';
+
+async function cypherxYTAudio(url) {
+    const res = await axios.get(`${CYPHERX_BASE}/download/youtube/audio?url=${encodeURIComponent(url)}`, { timeout: 30000 });
+    if (res.data?.success && res.data?.result?.download_url) {
+        return { url: res.data.result.download_url, title: res.data.result.title };
+    }
+    throw new Error('CypherxBot audio API failed');
+}
+
+async function fallbackYTAudio(url) {
+    const res = await axios.get(`https://apiskeith.vercel.app/download/audio?url=${encodeURIComponent(url)}`, { timeout: 30000 });
+    if (res.data?.status && res.data?.result) {
+        return { url: res.data.result, title: res.data.title };
+    }
+    throw new Error('Fallback audio API failed');
+}
 
 async function playCommand(sock, chatId, message) {
-    try { 
-        await sock.sendMessage(chatId, {
-            react: { text: '🎵', key: message.key }
-        });         
+    try {
+        await sock.sendMessage(chatId, { react: { text: '🎵', key: message.key } });
 
         const text = message.message?.conversation || message.message?.extendedTextMessage?.text;
-        const parts = text.split(' ');
-        const query = parts.slice(1).join(' ').trim();
+        const query = text.split(' ').slice(1).join(' ').trim();
 
         if (!query) {
-            return await sock.sendMessage(chatId, { 
-                text: '🎵 Provide a song name!\nExample:.play Not Like Us' 
+            return await sock.sendMessage(chatId, {
+                text: '🎵 Provide a song name!\nExample: .play Not Like Us'
             }, { quoted: message });
         }
 
         if (query.length > 100) {
-            return await sock.sendMessage(chatId, { 
-                text: `📝 Song name too long! Max 100 chars.` 
+            return await sock.sendMessage(chatId, {
+                text: '📝 Song name too long! Max 100 chars.'
             }, { quoted: message });
         }
 
-        const searchResult = await (await yts(`${query} official`)).videos[0];
+        const searchResult = (await yts(`${query} official`)).videos[0];
         if (!searchResult) {
-            return sock.sendMessage(chatId, { 
-                text: "😕 Couldn't find that song. Try another one!" 
+            return sock.sendMessage(chatId, {
+                text: "😕 Couldn't find that song. Try another one!"
             }, { quoted: message });
         }
 
         const video = searchResult;
-        const apiUrl = `https://apiskeith.vercel.app/download/audio?url=${encodeURIComponent(video.url)}`;
-        const response = await axios.get(apiUrl);
-        const apiData = response.data;
 
-        if (!apiData.status || !apiData.result) throw new Error("API failed to fetch track!");
+        let audioData;
+        try {
+            audioData = await cypherxYTAudio(video.url);
+        } catch {
+            audioData = await fallbackYTAudio(video.url);
+        }
 
         const tempDir = path.join(__dirname, "temp");
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
-        const timestamp = Date.now();
-        const fileName = `audio_${timestamp}.mp3`;
-        const filePath = path.join(tempDir, fileName);
-
-        // Download MP3
-        const audioResponse = await axios({ 
-            method: "get", 
-            url: apiData.result, 
-            responseType: "stream", 
-            timeout: 600000 
-        });
+        const filePath = path.join(tempDir, `audio_${Date.now()}.mp3`);
+        const audioResponse = await axios({ method: "get", url: audioData.url, responseType: "stream", timeout: 600000 });
         const writer = fs.createWriteStream(filePath);
         audioResponse.data.pipe(writer);
-        await new Promise((resolve, reject) => { 
-            writer.on("finish", resolve); 
-            writer.on("error", reject); 
-        });
+        await new Promise((resolve, reject) => { writer.on("finish", resolve); writer.on("error", reject); });
 
         if (!fs.existsSync(filePath) || fs.statSync(filePath).size === 0) {
             throw new Error("Download failed or empty file!");
         }
 
-        // Read file as buffer
         const fileBuffer = fs.readFileSync(filePath);
-        const cleanTitle = (apiData.title || video.title).replace(/[^\w\s\-]/gi, '').trim();
+        const cleanTitle = (audioData.title || video.title).replace(/[^\w\s\-]/gi, '').trim();
 
-        // Send as DOCUMENT using buffer - quoted with original message instead of fake contact
-        await sock.sendMessage(chatId, { 
+        await sock.sendMessage(chatId, {
             document: fileBuffer,
-            mimetype: "audio/mpeg", 
+            mimetype: "audio/mpeg",
             fileName: `${cleanTitle.substring(0, 100)}.mp3`,
-            caption: `🎵 *${apiData.title || video.title}*`
+            caption: `🎵 *${audioData.title || video.title}*`
         }, { quoted: message });
 
-        // Cleanup immediately
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
     } catch (error) {
         console.error("Play command error:", error);
-        return await sock.sendMessage(chatId, { 
-            text: `🚫 Error: ${error.message}` 
+        return await sock.sendMessage(chatId, {
+            text: `🚫 Error: ${error.message}`
         }, { quoted: message });
     }
 }

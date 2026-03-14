@@ -1,6 +1,8 @@
 const axios = require('axios');
 const yts = require('yt-search');
 
+const CYPHERX_BASE = 'https://media.cypherxbot.space';
+
 const AXIOS_DEFAULTS = {
     timeout: 60000,
     headers: {
@@ -12,35 +14,32 @@ const AXIOS_DEFAULTS = {
 async function tryRequest(getter, attempts = 3) {
     let lastError;
     for (let attempt = 1; attempt <= attempts; attempt++) {
-        try {
-            return await getter();
-        } catch (err) {
+        try { return await getter(); } catch (err) {
             lastError = err;
-            if (attempt < attempts) {
-                await new Promise(r => setTimeout(r, 1000 * attempt));
-            }
+            if (attempt < attempts) await new Promise(r => setTimeout(r, 1000 * attempt));
         }
     }
     throw lastError;
 }
 
+async function cypherxVideoByUrl(youtubeUrl) {
+    const res = await tryRequest(() => axios.get(`${CYPHERX_BASE}/download/youtube/video?url=${encodeURIComponent(youtubeUrl)}`, AXIOS_DEFAULTS));
+    if (res.data?.success && res.data?.result?.download_url) {
+        return { download: res.data.result.download_url, title: res.data.result.title, thumbnail: res.data.result.thumbnail };
+    }
+    throw new Error('CypherxBot video API failed');
+}
+
 async function getYupraVideoByUrl(youtubeUrl) {
-    const apiUrl = `https://api.yupra.my.id/api/downloader/ytmp4?url=${encodeURIComponent(youtubeUrl)}`;
-    const res = await tryRequest(() => axios.get(apiUrl, AXIOS_DEFAULTS));
+    const res = await tryRequest(() => axios.get(`https://api.yupra.my.id/api/downloader/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, AXIOS_DEFAULTS));
     if (res?.data?.success && res?.data?.data?.download_url) {
-        return {
-            download: res.data.data.download_url,
-            title: res.data.data.title,
-            thumbnail: res.data.data.thumbnail
-        };
+        return { download: res.data.data.download_url, title: res.data.data.title, thumbnail: res.data.data.thumbnail };
     }
     throw new Error('Yupra returned no download');
 }
 
 async function getOkatsuVideoByUrl(youtubeUrl) {
-    const apiUrl = `https://okatsu-rolezapiiz.vercel.app/downloader/ytmp4?url=${encodeURIComponent(youtubeUrl)}`;
-    const res = await tryRequest(() => axios.get(apiUrl, AXIOS_DEFAULTS));
-    // shape: { status, creator, url, result: { status, title, mp4 } }
+    const res = await tryRequest(() => axios.get(`https://okatsu-rolezapiiz.vercel.app/downloader/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, AXIOS_DEFAULTS));
     if (res?.data?.result?.mp4) {
         return { download: res.data.result.mp4, title: res.data.result.title };
     }
@@ -52,20 +51,18 @@ async function videoCommand(sock, chatId, message) {
         const text = message.message?.conversation || message.message?.extendedTextMessage?.text;
         const searchQuery = text.split(' ').slice(1).join(' ').trim();
 
-
         if (!searchQuery) {
             await sock.sendMessage(chatId, { text: 'What video do you want to download?' }, { quoted: message });
             return;
         }
 
-        // Determine if input is a YouTube link
         let videoUrl = '';
         let videoTitle = '';
         let videoThumbnail = '';
+
         if (searchQuery.startsWith('http://') || searchQuery.startsWith('https://')) {
             videoUrl = searchQuery;
         } else {
-            // Search YouTube for the video
             const { videos } = await yts(searchQuery);
             if (!videos || videos.length === 0) {
                 await sock.sendMessage(chatId, { text: 'No videos found!' }, { quoted: message });
@@ -76,43 +73,40 @@ async function videoCommand(sock, chatId, message) {
             videoThumbnail = videos[0].thumbnail;
         }
 
-        // Send thumbnail immediately
         try {
             const ytId = (videoUrl.match(/(?:youtu\.be\/|v=)([a-zA-Z0-9_-]{11})/) || [])[1];
             const thumb = videoThumbnail || (ytId ? `https://i.ytimg.com/vi/${ytId}/sddefault.jpg` : undefined);
-            const captionTitle = videoTitle || searchQuery;
             if (thumb) {
                 await sock.sendMessage(chatId, {
                     image: { url: thumb },
-                    caption: `*${captionTitle}*\nDownloading...`
+                    caption: `*${videoTitle || searchQuery}*\nDownloading...`
                 }, { quoted: message });
             }
         } catch (e) { console.error('[VIDEO] thumb error:', e?.message || e); }
 
-
-        // Validate YouTube URL
-        let urls = videoUrl.match(/(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:watch\?v=|v\/|embed\/|shorts\/|playlist\?list=)?)([a-zA-Z0-9_-]{11})/gi);
+        const urls = videoUrl.match(/(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:watch\?v=|v\/|embed\/|shorts\/|playlist\?list=)?)([a-zA-Z0-9_-]{11})/gi);
         if (!urls) {
             await sock.sendMessage(chatId, { text: 'This is not a valid YouTube link!' }, { quoted: message });
             return;
         }
 
-        // Get video: try Yupra first, then Okatsu fallback
         let videoData;
         try {
-            videoData = await getYupraVideoByUrl(videoUrl);
-        } catch (e1) {
-            videoData = await getOkatsuVideoByUrl(videoUrl);
+            videoData = await cypherxVideoByUrl(videoUrl);
+        } catch {
+            try {
+                videoData = await getYupraVideoByUrl(videoUrl);
+            } catch {
+                videoData = await getOkatsuVideoByUrl(videoUrl);
+            }
         }
 
-        // Send video directly using the download URL
         await sock.sendMessage(chatId, {
             video: { url: videoData.download },
             mimetype: 'video/mp4',
             fileName: `${videoData.title || videoTitle || 'video'}.mp4`,
-            caption: `*${videoData.title || videoTitle || 'Video'}*\n\n> *TECHWORD MD™*`
+            caption: `*${videoData.title || videoTitle || 'Video'}*\n\n> *TRUTH-MD™*`
         }, { quoted: message });
-
 
     } catch (error) {
         console.error('[VIDEO] Command Error:', error?.message || error);
@@ -120,4 +114,4 @@ async function videoCommand(sock, chatId, message) {
     }
 }
 
-module.exports = videoCommand; 
+module.exports = videoCommand;

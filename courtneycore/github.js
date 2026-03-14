@@ -25,7 +25,7 @@ async function githubCommand(sock, chatId, message) {
   try {
     const response = await fetch(repoUrl, {
       headers: {
-        'User-Agent': 'dave-Quantum-Bot', // Required by GitHub API
+        'User-Agent': 'courtney-Quantum-Bot', // Required by GitHub API
         'Accept': 'application/vnd.github.v3+json',
       },
       timeout: 10000, // 10 second timeout

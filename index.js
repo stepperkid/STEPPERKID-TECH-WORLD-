@@ -352,7 +352,7 @@ async function tylor() {
         require('./settings');
         const store = require('./lib/lightweight_store');
         store.readFromFile();
-        log("✨ daveH core loaded", 'green');
+        log("✨ courtneyH core loaded", 'green');
     } catch (e) {
         log(`FATAL: Core load failed: ${e.message}`, 'red', true);
         process.exit(1);
@@ -361,7 +361,7 @@ async function tylor() {
     await checkAndHandleSessionFormat();
     global.errorRetryCount = loadErrorCount().count;
 
-    // Priority: Environment SESSION_ID with dave:~ prefix
+    // Priority: Environment SESSION_ID with courtney:~ prefix
     const envSessionID = process.env.SESSION_ID?.trim();
     if (envSessionID && envSessionID.startsWith('TRUTH-MD')) {
         log(" [PRIORITY]: Using .env TECH session", 'magenta');
@@ -395,7 +395,7 @@ async function tylor() {
 
     log("Choose login method:", 'yellow');
     log("1) WhatsApp Number (Pairing Code)", 'blue');
-    log("2) dave:~ Session ID", 'blue');
+    log("2) courtney:~ Session ID", 'blue');
 
     let choice = await question("Choice (1/2): ");
     choice = choice.trim();

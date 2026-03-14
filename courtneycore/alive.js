@@ -49,7 +49,7 @@ async function aliveCommand(sock, chatId, message) {
 
         await sock.sendMessage(chatId, {
             audio: { 
-                url: "./dave.mp3"
+                url: "./courtney.mp3"
             },
             mimetype: "audio/mpeg",
             ptt: false,

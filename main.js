@@ -67,6 +67,9 @@ async function resolvePhoneFromLid(sock, lidJid) {
     } catch (e) {}
     return null;
 }
+const { setPrefixCommand, loadPrefix } = require('./courtneycore/setprefix');
+global.botPrefix = loadPrefix();
+
 const { isBanned } = require('./lib/isBanned');
 const yts = require('yt-search');
 const { fetchBuffer } = require('./lib/myfunc');
@@ -279,7 +282,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
             }
         }
 
-        const userMessage = (
+        let userMessage = (
             message.message?.conversation?.trim() ||
             message.message?.extendedTextMessage?.text?.trim() ||
             message.message?.imageMessage?.caption?.trim() ||
@@ -287,6 +290,12 @@ async function handleMessages(sock, messageUpdate, printLog) {
             message.message?.buttonsResponseMessage?.selectedButtonId?.trim() ||
             ''
         ).toLowerCase().replace(/\.\s+/g, '.').trim();
+
+        // Normalize custom prefix → '.' so all existing commands work unchanged
+        const activePrefix = global.botPrefix || '.';
+        if (activePrefix !== '.' && userMessage.startsWith(activePrefix)) {
+            userMessage = '.' + userMessage.slice(activePrefix.length);
+        }
 
         // Preserve raw message for commands like .tag that need original casing
         const rawText = message.message?.conversation?.trim() ||
@@ -340,7 +349,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
             dim: chalk.hex('#636E72'),
         };
 
-        const isCmd = rawText.startsWith('.');
+        const isCmd = rawText.startsWith(activePrefix);
         const chatLabel = isGroup
             ? `${c.group('GROUP')} ${c.dim(groupSubject)}`
             : `${c.dm('DM')}`;
@@ -450,7 +459,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
         const isAdminCommand = admincommands.some(cmd => userMessage.startsWith(cmd));
 
         // List of owner commands
-        const ownercommands = ['.mode', '.autostatus', '.antidelete', '.cleartmp', '.setpp', '.clearsession', '.areact', '.autoreact', '.autotyping', '.autoread', '.pmblocker'];
+        const ownercommands = ['.mode', '.autostatus', '.antidelete', '.cleartmp', '.setpp', '.clearsession', '.areact', '.autoreact', '.autotyping', '.autoread', '.pmblocker', '.setprefix'];
         const isOwnerCommand = ownercommands.some(cmd => userMessage.startsWith(cmd));
 
         let isSenderAdmin = false;
@@ -647,6 +656,13 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 {
                     const args = userMessage.split(' ').slice(1).join(' ');
                     await pmblockerCommand(sock, chatId, message, args);
+                }
+                commandExecuted = true;
+                break;
+            case userMessage.startsWith('.setprefix'):
+                {
+                    const isOwner = message.key.fromMe || senderIsOwnerOrSudo;
+                    await setPrefixCommand(sock, chatId, message, isOwner);
                 }
                 commandExecuted = true;
                 break;

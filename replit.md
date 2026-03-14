@@ -12,7 +12,7 @@ A Node.js WhatsApp bot built with the Baileys library. Supports group management
 - **Config**: `config.js` — API keys and global config, `settings.js` — bot settings
 
 ## Setup
-1. Set the `SESSION_ID` environment variable with a valid `TECHWORLD:~` prefixed session ID, OR
+1. Set the `SESSION_ID` environment variable with a valid `TRUTH-MD:~` prefixed session ID, OR
 2. Run the bot and choose login method (pairing code or session ID)
 
 ## Running

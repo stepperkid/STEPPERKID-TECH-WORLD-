@@ -113,8 +113,8 @@ async function downloadSessionData() {
     try {
         await fs.promises.mkdir(sessionDir, { recursive: true });
         if (!fs.existsSync(credsPath) && global.SESSION_ID) {
-            const base64Data = global.SESSION_ID.includes("TECHWORLD:~") ? 
-                global.SESSION_ID.split("TECHWORLD:~")[1] : global.SESSION_ID;
+            const base64Data = global.SESSION_ID.includes("TRUTH-MD:~") ? 
+                global.SESSION_ID.split("TRUTH-MD:~")[1] : global.SESSION_ID;
             await fs.promises.writeFile(credsPath, Buffer.from(base64Data, 'base64'));
             log('✅ Session saved', 'green');
         }
@@ -138,8 +138,8 @@ async function requestPairingCode(socket) {
 // --- Session Validation ---
 async function checkAndHandleSessionFormat() {
     const sessionId = process.env.SESSION_ID?.trim();
-    if (sessionId && !sessionId.startsWith('TECHWORLD:~')) {
-        log(chalk.white.bgRed('[ERROR]: SESSION_ID must start with "TECHWORLD:~"'), 'white');
+    if (sessionId && !sessionId.startsWith('TRUTH-MD:~')) {
+        log(chalk.white.bgRed('[ERROR]: SESSION_ID must start with "TRUTH-MD:~"'), 'white');
         log('Cleaning .env...', 'red');
 
         try {
@@ -363,7 +363,7 @@ async function tylor() {
 
     // Priority: Environment SESSION_ID with dave:~ prefix
     const envSessionID = process.env.SESSION_ID?.trim();
-    if (envSessionID && envSessionID.startsWith('TECHWORLD')) {
+    if (envSessionID && envSessionID.startsWith('TRUTH-MD')) {
         log(" [PRIORITY]: Using .env TECH session", 'magenta');
         clearSessionFiles();
         global.SESSION_ID = envSessionID;
@@ -408,10 +408,10 @@ async function tylor() {
         const bot = await startXeonBotInc();
         await requestPairingCode(bot);
     } else if (choice === '2') {
-        let sessionId = await question("Paste TECHWORLD:~ Session ID: ");
+        let sessionId = await question("Paste TRUTH-MD:~ Session ID: ");
         sessionId = sessionId.trim();
-        if (!sessionId.includes("TECHWORLD:~")) {
-            log("Invalid! Must contain 'TECHWORLD:~' prefix", 'red');
+        if (!sessionId.includes("TRUTH-MD:~")) {
+            log("Invalid! Must contain 'TRUTH-MD:~' prefix", 'red');
             process.exit(1);
         }
         global.SESSION_ID = sessionId;

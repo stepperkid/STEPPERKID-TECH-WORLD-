@@ -5,7 +5,7 @@ require('dotenv').config()
 // Keep-alive HTTP server on port 5000
 const express = require('express');
 const _app = express();
-_app.get('/', (req, res) => res.send('TECHWORD-MD Bot is running!'));
+_app.get('/', (req, res) => res.send('STEPPERKID-TECH-WORLD Bot is running!'));
 _app.listen(5000, '0.0.0.0', () => console.log('Keep-alive server on port 5000'));
 const chalk = require('chalk');
 const path = require('path');
@@ -28,7 +28,7 @@ require('dotenv').config();
 global.isBotConnected = false;
 global.errorRetryCount = 0;
 global.messageBackup = {};
-global.botname = "TECHWORD-BOT";
+global.botname = "STEPPERKID-TECH-WORLD";
 global.themeemoji = "•";
 
 // --- Paths ---
@@ -40,7 +40,7 @@ const SESSION_ERROR_FILE = path.join(__dirname, 'sessionErrorCount.json');
 
 // --- Logging ---
 function log(message, color = 'white', isError = false) {
-    const prefix = chalk.cyan.bold('[ TECHWORD MD ]');
+    const prefix = chalk.cyan.bold('[ STEPPERKID-TECH-WORLD ]');
     const logFunc = isError ? console.error : console.log;
     logFunc(`${prefix} ${chalk[color](message)}`);
 }
@@ -204,7 +204,7 @@ async function sendWelcomeMessage(XeonBotInc) {
         const connSettings = require('./settings');
         await XeonBotInc.sendMessage(pNumber, {
             text: `┏━━━━━✧ CONNECTED ✧━━━━━━━
-┃✧ Bot: TECHWORD MD
+┃✧ Bot: STEPPERKID-TECH-WORLD
 ┃✧ Status: Active & Online
 ┃✧ Time: ${new Date().toLocaleString()}
 ┃✧ Platform: ${connPlat}
@@ -215,7 +215,7 @@ async function sendWelcomeMessage(XeonBotInc) {
         global.isBotConnected = true;
         deleteErrorCountFile();
         global.errorRetryCount = 0;
-        log('✅ TECHWORD MD connected successfully', 'green');
+        log('✅ STEPPERKID-TECH-WORLD connected successfully', 'green');
     } catch (e) {
         log(`Welcome message error: ${e.message}`, 'red', true);
         global.isBotConnected = false;
@@ -223,7 +223,7 @@ async function sendWelcomeMessage(XeonBotInc) {
 }
 
 async function startXeonBotInc() {
-    log('Connecting TECHWORD MD...', 'cyan');
+    log('Connecting STEPPERKID-TECH-WORLD...', 'cyan');
     const { version } = await fetchLatestBaileysVersion();
     await fs.promises.mkdir(sessionDir, { recursive: true });
 
@@ -301,7 +301,7 @@ async function startXeonBotInc() {
             const settings = require('./settings');
             console.log('');
             console.log(chalk.hex('#6C5CE7').bold('  ╔═══════════════════════════════════╗'));
-            console.log(chalk.hex('#6C5CE7').bold('  ║') + chalk.hex('#00CEC9').bold('     TECHWORD MD  -  ONLINE     ') + chalk.hex('#6C5CE7').bold('║'));
+            console.log(chalk.hex('#6C5CE7').bold('  ║') + chalk.hex('#00CEC9').bold('     STEPPERKID-TECH-WORLD  -  ONLINE     ') + chalk.hex('#6C5CE7').bold('║'));
             console.log(chalk.hex('#6C5CE7').bold('  ╠═══════════════════════════════════╣'));
             console.log(chalk.hex('#6C5CE7').bold('  ║') + chalk.hex('#DFE6E9')(` Number  : +${botNumber}`.padEnd(34)) + chalk.hex('#6C5CE7').bold('║'));
             console.log(chalk.hex('#6C5CE7').bold('  ║') + chalk.hex('#DFE6E9')(` Version : ${settings.version || '1.0.0'}`.padEnd(34)) + chalk.hex('#6C5CE7').bold('║'));
@@ -315,7 +315,7 @@ async function startXeonBotInc() {
 
             await sendWelcomeMessage(XeonBotInc);
         } else if (connection === 'connecting') {
-            log('🔄 Connecting TECHWORD MD to WhatsApp...', 'yellow');
+            log('🔄 Connecting STEPPERKID-TECH-WORLD to WhatsApp...', 'yellow');
         }
     });
 
@@ -335,7 +335,7 @@ async function startXeonBotInc() {
                     antiCallNotified.add(callerJid);
                     setTimeout(() => antiCallNotified.delete(callerJid), 60000);
                     await XeonBotInc.sendMessage(callerJid, { 
-                        text: '📵 TECHWORD: Calls are not allowed. You have been blocked.' 
+                        text: '📵 STEPPERKID-TECH-WORLD: Calls are not allowed. You have been blocked.' 
                     });
                 }
             }
@@ -374,7 +374,7 @@ async function tylor() {
         return;
     }
 
-    log("[ALERT] No TECHWORD:~ session in .env, checking stored...", 'yellow');
+    log("[ALERT] No STEPPERKID-TECH-WORLD:~ session in .env, checking stored...", 'yellow');
     await checkSessionIntegrityAndClean();
 
     if (sessionExists()) {
@@ -390,7 +390,7 @@ async function tylor() {
 
     console.log(chalk.cyan(`
     ╔══════════════════════════════╗
-    ║     TECHWORD BOT Login          ║
+    ║     STEPPERKID-TECH-WORLD Login          ║
     ╚══════════════════════════════╝`));
 
     log("Choose login method:", 'yellow');

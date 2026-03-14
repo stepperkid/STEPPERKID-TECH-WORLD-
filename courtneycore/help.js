@@ -289,7 +289,7 @@ const helpCommand = async (sock, chatId, message) => {
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
           newsletterJid: '0029VbCafMZBA1f42UxcYW0D@newsletter',
-          newsletterName: 'TECHWORD MD',
+          newsletterName: 'STEPPERKID-TECH-WORLD',
           serverMessageId: 143
         }
       }

@@ -17,7 +17,7 @@ async function aliveCommand(sock, chatId, message) {
         const mode = getBotMode();
 
         const caption = `*─━┄๑⚡๑┄━─*\n` +
-                        `    🟢 *TECHWORD MD™ IS ALIVE!* ⚡\n` +
+                        `    🟢 *STEPPERKID-TECH-WORLD™ IS ALIVE!* ⚡\n` +
                         `*─━┄๑⚡๑┄━─*\n\n` +
                         `✨ *Version:* ${version}\n` +
                         `🟢 *Status:* Online & Active\n` +
@@ -31,7 +31,7 @@ async function aliveCommand(sock, chatId, message) {
                         ` ➤ Sticker Maker • Meme • Fun\n` +
                         ` ➤ 200+ Working Commands!\n\n` +
                         `📌 Type *${prefix}menu* or *${prefix}help* for commands\n\n` +
-                        `> © 2025 TECHWORD MD™ - Powered by NodeJS`;
+                        `> © 2025 STEPPERKID-TECH-WORLD™ - Powered by NodeJS`;
 
         await sock.sendMessage(chatId, {
             image: { url: "./image.jpg" },
@@ -41,7 +41,7 @@ async function aliveCommand(sock, chatId, message) {
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
                     newsletterJid: "120363409714698622@newsletter",
-                    newsletterName: "TECHWORD MD™",
+                    newsletterName: "STEPPERKID-TECH-WORLD™",
                     serverMessageId: -1
                 }
             }
@@ -59,7 +59,7 @@ async function aliveCommand(sock, chatId, message) {
     } catch (error) {
         console.error("Error in alive command:", error);
         await sock.sendMessage(chatId, {
-            text: "😭 *Error occurred*, But online!\n\n> TECHWORD MD™ 💪"
+            text: "😭 *Error occurred*, But online!\n\n> STEPPERKID-TECH-WORLD™ 💪"
         }, { quoted: message });
     }
 }

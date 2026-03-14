@@ -1,7 +1,7 @@
 const settings = {
-  packname: 'TECHWORD MD™',
-  author: 'Courtney‎',
-  botName: "TECHWORD MD",
+  packname: 'STEPPERKID-TECH-WORLD™',
+  author: 'Stepperkid',
+  botName: "STEPPERKID-TECH-WORLD",
   botOwner: 'COURTNEY🦅', // Your name
   ownerNumber: '254743037984', //Set your number here without + symbol, just add country code & number without any space
   giphyApiKey: 'qnl7ssQChTdPjsKta2Ax2LMaGXz303tq',
@@ -10,7 +10,7 @@ const settings = {
   storeWriteInterval: 10000,
   description: "This is a bot for managing group commands and automating tasks.",
   version: "1.0.5",
-  updateZipUrl: "https://github.com/Courtney250/TECHWORD-MD/archive/refs/heads/main.zip",
+  updateZipUrl: "https://github.com/Courtney250/STEPPERKID-TECH-WORLD/archive/refs/heads/main.zip",
 };
 
 module.exports = settings;

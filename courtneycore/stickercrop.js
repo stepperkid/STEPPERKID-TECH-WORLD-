@@ -37,7 +37,7 @@ async function stickercropCommand(sock, chatId, message) {
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
                     newsletterJid: '120363400480173280@newsletter',
-                    newsletterName: 'TECHWORD MD™',
+                    newsletterName: 'STEPPERKID-TECH-WORLD',
                     serverMessageId: -1
                 }
             }
@@ -59,7 +59,7 @@ async function stickercropCommand(sock, chatId, message) {
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
                         newsletterJid: '120363400480173280@newsletter',
-                        newsletterName: 'TECHWORD MD™',
+                        newsletterName: 'STEPPERKID-TECH-WORLD',
                         serverMessageId: -1
                     }
                 }
@@ -187,7 +187,7 @@ async function stickercropCommand(sock, chatId, message) {
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
                     newsletterJid: '120363400480173280@newsletter',
-                    newsletterName: 'TECHWORD MD™',
+                    newsletterName: 'STEPPERKID-TECH-WORLD',
                     serverMessageId: -1
                 }
             }

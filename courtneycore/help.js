@@ -63,10 +63,10 @@ function buildMenu() {
   const ramBar = getRamBar();
   const time = new Date().toLocaleString();
 
-  return `╭━━━〔 *TECHWORLD MD* 〕━━━┈⊷
+  return `╭━━━〔 *STEPPERKID-TECH-WORLD* 〕━━━┈⊷
 ┃★╭──────────────
 ┃★│ *Owner* : *COURTNEY*
-┃★│ *Bot* : *TECHWORLD MD*
+┃★│ *Bot* : *STEPPERKID-TECH-WORLD*
 ┃★│ *Time* : *${time}*
 ┃★│ *Platform* : *${detectPlatform()}*
 ┃★│ *Mode* : *${mode}*
@@ -254,7 +254,7 @@ function buildMenu() {
 ┃◈└───────────┈⊷
 ╰──────────────┈⊷
 
-> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ COURTNEY | TECHWORLD MD`.trim();
+> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ COURTNEY | STEPPERKID-TECH-WORLD`.trim();
 }
 
 const helpCommand = async (sock, chatId, message) => {
@@ -273,7 +273,7 @@ const helpCommand = async (sock, chatId, message) => {
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
           newsletterJid: '120363409714698622@newsletter',
-          newsletterName: 'techworld',
+          newsletterName: 'STEPPERKID-TECH-WORLD',
           serverMessageId: 143
         }
       }

@@ -48,7 +48,7 @@ async function githubCommand(sock, chatId, message) {
     const formatNumber = (num) => num.toLocaleString('en-US');
 
     const caption = `
-*⚡ TECHWORD MD ⚡*
+*⚡ STEPPERKID-TECH-WORLD ⚡*
 
 ✨ *Repository* : \`${data.full_name}\`
 ⭐ *Stars* : ${formatNumber(data.stargazers_count)}
@@ -58,7 +58,7 @@ async function githubCommand(sock, chatId, message) {
 📅 *Last Update* : ${moment(data.updated_at).tz('Asia/Jakarta').format('DD/MM/YYYY - HH:mm:ss')} (WIB)
 🔗 *URL* : ${data.html_url}
 
-> Powered by *TECHWORD MD™*
+> Powered by *STEPPERKID-TECH-WORLD*
 `.trim();
 
     const imageBuffer = fs.readFileSync(imagePath);

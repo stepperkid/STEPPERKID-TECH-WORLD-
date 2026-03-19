@@ -1,50 +1,7 @@
-const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 const yts = require('yt-search');
-
-const CYPHERX_BASE = 'https://media.cypherxbot.space';
-
-const AXIOS_DEFAULTS = {
-    timeout: 60000,
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*'
-    }
-};
-
-async function tryRequest(getter, attempts = 3) {
-    let lastError;
-    for (let attempt = 1; attempt <= attempts; attempt++) {
-        try { return await getter(); } catch (err) {
-            lastError = err;
-            if (attempt < attempts) await new Promise(r => setTimeout(r, 1000 * attempt));
-        }
-    }
-    throw lastError;
-}
-
-async function cypherxVideoByUrl(youtubeUrl) {
-    const res = await tryRequest(() => axios.get(`${CYPHERX_BASE}/download/youtube/video?url=${encodeURIComponent(youtubeUrl)}`, AXIOS_DEFAULTS));
-    if (res.data?.success && res.data?.result?.download_url) {
-        return { download: res.data.result.download_url, title: res.data.result.title, thumbnail: res.data.result.thumbnail };
-    }
-    throw new Error('CypherxBot video API failed');
-}
-
-async function getYupraVideoByUrl(youtubeUrl) {
-    const res = await tryRequest(() => axios.get(`https://api.yupra.my.id/api/downloader/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, AXIOS_DEFAULTS));
-    if (res?.data?.success && res?.data?.data?.download_url) {
-        return { download: res.data.data.download_url, title: res.data.data.title, thumbnail: res.data.data.thumbnail };
-    }
-    throw new Error('Yupra returned no download');
-}
-
-async function getOkatsuVideoByUrl(youtubeUrl) {
-    const res = await tryRequest(() => axios.get(`https://okatsu-rolezapiiz.vercel.app/downloader/ytmp4?url=${encodeURIComponent(youtubeUrl)}`, AXIOS_DEFAULTS));
-    if (res?.data?.result?.mp4) {
-        return { download: res.data.result.mp4, title: res.data.result.title };
-    }
-    throw new Error('Okatsu ytmp4 returned no mp4');
-}
+const ytdl = require('@distube/ytdl-core');
 
 async function videoCommand(sock, chatId, message) {
     try {
@@ -52,9 +9,11 @@ async function videoCommand(sock, chatId, message) {
         const searchQuery = text.split(' ').slice(1).join(' ').trim();
 
         if (!searchQuery) {
-            await sock.sendMessage(chatId, { text: 'What video do you want to download?' }, { quoted: message });
+            await sock.sendMessage(chatId, { text: 'What video do you want to download?\nExample: .video Blinding Lights' }, { quoted: message });
             return;
         }
+
+        await sock.sendMessage(chatId, { react: { text: '🎬', key: message.key } });
 
         let videoUrl = '';
         let videoTitle = '';
@@ -73,44 +32,63 @@ async function videoCommand(sock, chatId, message) {
             videoThumbnail = videos[0].thumbnail;
         }
 
-        try {
-            const ytId = (videoUrl.match(/(?:youtu\.be\/|v=)([a-zA-Z0-9_-]{11})/) || [])[1];
-            const thumb = videoThumbnail || (ytId ? `https://i.ytimg.com/vi/${ytId}/sddefault.jpg` : undefined);
-            if (thumb) {
-                await sock.sendMessage(chatId, {
-                    image: { url: thumb },
-                    caption: `*${videoTitle || searchQuery}*\nDownloading...`
-                }, { quoted: message });
-            }
-        } catch (e) { console.error('[VIDEO] thumb error:', e?.message || e); }
+        const info = await ytdl.getInfo(videoUrl);
+        videoTitle = videoTitle || info.videoDetails.title;
+        videoThumbnail = videoThumbnail || info.videoDetails.thumbnails?.[0]?.url;
 
-        const urls = videoUrl.match(/(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:watch\?v=|v\/|embed\/|shorts\/|playlist\?list=)?)([a-zA-Z0-9_-]{11})/gi);
-        if (!urls) {
-            await sock.sendMessage(chatId, { text: 'This is not a valid YouTube link!' }, { quoted: message });
-            return;
+        if (videoThumbnail) {
+            try {
+                await sock.sendMessage(chatId, {
+                    image: { url: videoThumbnail },
+                    caption: `*${videoTitle}*\n⏳ Downloading...`
+                }, { quoted: message });
+            } catch (e) {}
         }
 
-        let videoData;
-        try {
-            videoData = await cypherxVideoByUrl(videoUrl);
-        } catch {
-            try {
-                videoData = await getYupraVideoByUrl(videoUrl);
-            } catch {
-                videoData = await getOkatsuVideoByUrl(videoUrl);
-            }
+        const formats = ytdl.filterFormats(info.formats, 'videoandaudio');
+        let bestFormat = formats
+            .filter(f => f.container === 'mp4')
+            .sort((a, b) => (b.height || 0) - (a.height || 0))[0];
+
+        if (!bestFormat) {
+            bestFormat = formats.sort((a, b) => (b.height || 0) - (a.height || 0))[0];
+        }
+
+        if (!bestFormat) throw new Error('No downloadable video format found');
+
+        const tempDir = path.join(__dirname, 'temp');
+        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+        const filePath = path.join(tempDir, `video_${Date.now()}.mp4`);
+
+        const videoStream = ytdl(videoUrl, { format: bestFormat });
+        const writer = fs.createWriteStream(filePath);
+        videoStream.pipe(writer);
+        await new Promise((resolve, reject) => {
+            writer.on('finish', resolve);
+            writer.on('error', reject);
+            videoStream.on('error', reject);
+        });
+
+        if (!fs.existsSync(filePath) || fs.statSync(filePath).size === 0) throw new Error('Download failed');
+
+        const sizeMB = (fs.statSync(filePath).size / (1024 * 1024)).toFixed(1);
+        if (parseFloat(sizeMB) > 95) {
+            fs.unlinkSync(filePath);
+            return await sock.sendMessage(chatId, { text: `⚠️ Video too large (${sizeMB}MB). Try a shorter video.` }, { quoted: message });
         }
 
         await sock.sendMessage(chatId, {
-            video: { url: videoData.download },
+            video: fs.readFileSync(filePath),
             mimetype: 'video/mp4',
-            fileName: `${videoData.title || videoTitle || 'video'}.mp4`,
-            caption: `*${videoData.title || videoTitle || 'Video'}*\n\n> *TRUTH-MD™*`
+            fileName: `${videoTitle.replace(/[^\w\s\-]/gi, '').trim()}.mp4`,
+            caption: `🎬 *${videoTitle}*\n> *STEPPERKID-TECH-WORLD*`
         }, { quoted: message });
 
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
     } catch (error) {
-        console.error('[VIDEO] Command Error:', error?.message || error);
-        await sock.sendMessage(chatId, { text: 'Download failed: ' + (error?.message || 'Unknown error') }, { quoted: message });
+        console.error('[VIDEO] Error:', error.message);
+        await sock.sendMessage(chatId, { text: '❌ Download failed: ' + error.message }, { quoted: message });
     }
 }
 

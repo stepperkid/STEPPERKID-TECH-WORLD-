@@ -193,7 +193,7 @@ const gitcloneCommand = require('./courtneycore/gitclone');
 global.packname = settings.packname;
 global.author = settings.author;
 global.channelLink = "https://whatsapp.com/channel/0029VbCafMZBA1f42UxcYW0D";
-global.ytch = "TECHWORD MD™";
+global.ytch = "STEPPERKID-TECH-WORLD";
 
 // Add this near the top of main.js with other global configurations
 const channelInfo = {
@@ -202,7 +202,7 @@ const channelInfo = {
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
             newsletterJid: '120363409714698622@newsletter',
-            newsletterName: 'TECHWORD MD™',
+            newsletterName: 'STEPPERKID-TECH-WORLD',
             serverMessageId: -1
         }
     }

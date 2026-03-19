@@ -2,49 +2,49 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
-const CYPHERX_BASE = 'https://media.cypherxbot.space';
+async function fbSnapSaveAPI(url) {
+    const res = await axios.post(
+        'https://snapsave.app/action.php',
+        new URLSearchParams({ url, lang: 'en' }).toString(),
+        {
+            timeout: 25000,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': 'https://snapsave.app/',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }
+    );
 
-async function cypherxFacebook(url) {
-    const res = await axios.get(`${CYPHERX_BASE}/download/facebook/video?url=${encodeURIComponent(url)}`, {
-        timeout: 25000,
-        headers: { 'accept': 'application/json' }
-    });
-    if (res.data?.success && res.data?.result?.download_url) {
-        return { url: res.data.result.download_url, title: res.data.result.title };
-    }
-    throw new Error('CypherxBot Facebook API failed');
+    const html = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+    const mp4Urls = [...html.matchAll(/https?:\/\/[^"'\s]+\.mp4[^"'\s]*/gi)].map(m => m[0]);
+    if (mp4Urls.length) return { url: mp4Urls[0], title: 'Facebook Video' };
+
+    const hrefUrls = [...html.matchAll(/href="(https?:\/\/[^"]+)"/gi)]
+        .map(m => m[1])
+        .filter(u => u.includes('video') || u.includes('dl') || u.includes('cdn'));
+    if (hrefUrls.length) return { url: hrefUrls[0], title: 'Facebook Video' };
+
+    throw new Error('SnapSave: no video URL found');
 }
 
-async function hanggtsAPI(url) {
-    const res = await axios.get(`https://api.hanggts.xyz/download/facebook?url=${encodeURIComponent(url)}`, {
-        timeout: 20000,
-        headers: { 'accept': '*/*', 'User-Agent': 'Mozilla/5.0' },
-        maxRedirects: 5,
-        validateStatus: s => s >= 200 && s < 500
-    });
+async function fbSaveFromAPI(url) {
+    const res = await axios.post(
+        'https://savefrom.net/api/convert',
+        JSON.stringify({ url }),
+        {
+            timeout: 20000,
+            headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0',
+                'Referer': 'https://savefrom.net/'
+            }
+        }
+    );
     const data = res.data;
-    if (!data) throw new Error('No data from Hanggts');
-
-    let fbvid = null;
-    let title = null;
-
-    if (data.result?.media) {
-        fbvid = data.result.media.video_hd || data.result.media.video_sd;
-        title = data.result.info?.title || data.result.title || data.title || "Facebook Video";
-    } else if (typeof data.result === 'object' && data.result?.url) {
-        fbvid = data.result.url; title = data.result.title || "Facebook Video";
-    } else if (typeof data.result === 'string' && data.result.startsWith('http')) {
-        fbvid = data.result; title = data.title || "Facebook Video";
-    } else if (data.result?.download) {
-        fbvid = data.result.download; title = data.result.title || "Facebook Video";
-    } else if (data.data?.url) {
-        fbvid = data.data.url; title = data.data.title || "Facebook Video";
-    } else if (data.url) {
-        fbvid = data.url; title = data.title || "Facebook Video";
-    }
-
-    if (!fbvid) throw new Error('Hanggts: no video URL extracted');
-    return { url: fbvid, title };
+    if (data?.url?.[0]?.url) return { url: data.url[0].url, title: data.meta?.title || 'Facebook Video' };
+    throw new Error('SaveFrom API failed');
 }
 
 async function facebookCommand(sock, chatId, message) {
@@ -54,80 +54,75 @@ async function facebookCommand(sock, chatId, message) {
 
         if (!url) {
             return await sock.sendMessage(chatId, {
-                text: "Please provide a Facebook video URL.\nExample: .fb https://www.facebook.com/..."
+                text: '📘 *Facebook Downloader*\n\nUsage: .facebook <url>\nExample: .facebook https://www.facebook.com/watch?v=...'
             }, { quoted: message });
         }
 
-        if (!url.includes('facebook.com') && !url.includes('fb.watch')) {
-            return await sock.sendMessage(chatId, { text: "That is not a Facebook link." }, { quoted: message });
+        if (!url.includes('facebook.com') && !url.includes('fb.watch') && !url.includes('fb.com')) {
+            return await sock.sendMessage(chatId, { text: '❌ That is not a Facebook link.' }, { quoted: message });
         }
 
         await sock.sendMessage(chatId, { react: { text: '🔄', key: message.key } });
-
-        // Resolve redirects
-        let resolvedUrl = url;
-        try {
-            const res = await axios.get(url, { timeout: 20000, maxRedirects: 10, headers: { 'User-Agent': 'Mozilla/5.0' } });
-            const possible = res?.request?.res?.responseUrl;
-            if (possible) resolvedUrl = possible;
-        } catch { }
+        await sock.sendMessage(chatId, { text: '⏳ Downloading Facebook video...' }, { quoted: message });
 
         let videoData;
-        // Try CypherxBot first
         try {
-            videoData = await cypherxFacebook(resolvedUrl);
-        } catch {
+            videoData = await fbSnapSaveAPI(url);
+        } catch (e1) {
+            console.error('[FB] SnapSave failed:', e1.message);
             try {
-                videoData = await cypherxFacebook(url);
-            } catch {
-                // Fallback to Hanggts
-                try {
-                    videoData = await hanggtsAPI(resolvedUrl);
-                } catch {
-                    videoData = await hanggtsAPI(url);
-                }
+                videoData = await fbSaveFromAPI(url);
+            } catch (e2) {
+                console.error('[FB] SaveFrom failed:', e2.message);
+                throw new Error('All Facebook download methods failed');
             }
         }
 
         if (!videoData?.url) {
             return await sock.sendMessage(chatId, {
-                text: '❌ Failed to get video URL from Facebook.\n\nPossible reasons:\n• Video is private or deleted\n• Link is invalid\n• Video is not available for download'
+                text: '❌ Could not extract video URL.\n\nPossible reasons:\n• Video is private or deleted\n• Invalid link'
             }, { quoted: message });
         }
 
-        const caption = videoData.title ? `TRUTH-MD™\n\n📝 Title: ${videoData.title}` : "TRUTH-MD™";
+        const caption = `📘 *${videoData.title || 'Facebook Video'}*\n> *STEPPERKID-TECH-WORLD*`;
 
         try {
             await sock.sendMessage(chatId, {
                 video: { url: videoData.url },
-                mimetype: "video/mp4",
+                mimetype: 'video/mp4',
                 caption
             }, { quoted: message });
-        } catch (urlError) {
-            console.error('URL method failed:', urlError.message);
+        } catch (sendErr) {
+            console.error('[FB] URL send failed, trying buffer:', sendErr.message);
 
-            const tmpDir = path.join(process.cwd(), 'tmp');
+            const tmpDir = path.join(process.cwd(), 'temp');
             if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
             const tempFile = path.join(tmpDir, `fb_${Date.now()}.mp4`);
 
             const videoRes = await axios({
-                method: 'GET', url: videoData.url, responseType: 'stream', timeout: 60000,
+                method: 'GET',
+                url: videoData.url,
+                responseType: 'stream',
+                timeout: 90000,
                 headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.facebook.com/' }
             });
             const writer = fs.createWriteStream(tempFile);
             videoRes.data.pipe(writer);
             await new Promise((resolve, reject) => { writer.on('finish', resolve); writer.on('error', reject); });
 
-            if (!fs.existsSync(tempFile) || fs.statSync(tempFile).size === 0) throw new Error('Download failed');
+            await sock.sendMessage(chatId, {
+                video: fs.readFileSync(tempFile),
+                mimetype: 'video/mp4',
+                caption
+            }, { quoted: message });
 
-            await sock.sendMessage(chatId, { video: { url: tempFile }, mimetype: "video/mp4", caption }, { quoted: message });
-            try { fs.unlinkSync(tempFile); } catch { }
+            try { fs.unlinkSync(tempFile); } catch (e) {}
         }
 
     } catch (error) {
-        console.error('Facebook command error:', error);
+        console.error('[FB] error:', error.message);
         await sock.sendMessage(chatId, {
-            text: "An error occurred. API might be down. Error: " + error.message
+            text: '❌ Facebook download failed.\n' + error.message
         }, { quoted: message });
     }
 }

@@ -31,6 +31,24 @@ global.messageBackup = {};
 global.botname = "STEPPERKID-TECH-WORLD";
 global.themeemoji = "•";
 
+// --- Reconnect Guard (prevents concurrent reconnect loops) ---
+let _isReconnecting = false;
+let _reconnectTimer = null;
+
+function scheduleReconnect(delayMs = 5000) {
+    if (_isReconnecting) {
+        log(`⚠️ Reconnect already scheduled — skipping duplicate`, 'yellow');
+        return;
+    }
+    _isReconnecting = true;
+    clearTimeout(_reconnectTimer);
+    _reconnectTimer = setTimeout(async () => {
+        _isReconnecting = false;
+        await startXeonBotInc();
+    }, delayMs);
+    log(`🔁 Reconnect scheduled in ${delayMs / 1000}s...`, 'yellow');
+}
+
 // --- Paths ---
 const sessionDir = path.join(__dirname, 'session');
 const credsPath = path.join(sessionDir, 'creds.json');
@@ -121,6 +139,24 @@ async function downloadSessionData() {
     } catch (err) { log(`Error downloading session: ${err.message}`, 'red', true); }
 }
 
+async function backupSessionToEnv() {
+    try {
+        if (!fs.existsSync(credsPath)) return;
+        const credsData = await fs.promises.readFile(credsPath);
+        const base64 = credsData.toString('base64');
+        const sessionId = `TRUTH-MD:~${base64}`;
+        let envContent = '';
+        if (fs.existsSync('.env')) envContent = fs.readFileSync('.env', 'utf8');
+        if (envContent.includes('SESSION_ID=')) {
+            envContent = envContent.replace(/^SESSION_ID=.*$/m, `SESSION_ID=${sessionId}`);
+        } else {
+            envContent += `\nSESSION_ID=${sessionId}`;
+        }
+        fs.writeFileSync('.env', envContent);
+        log('✅ Session backed up to .env as SESSION_ID', 'green');
+    } catch (err) { log(`Session backup error: ${err.message}`, 'red', true); }
+}
+
 async function requestPairingCode(socket) {
     try {
         await delay(3000);
@@ -163,23 +199,24 @@ async function checkSessionIntegrityAndClean() {
 }
 
 // --- Error Handling ---
-async function handle408Error(statusCode) {
+function handle408Error(statusCode) {
     if (statusCode !== DisconnectReason.connectionTimeout) return false;
 
     global.errorRetryCount++;
-    const MAX_RETRIES = 3;
-    const errorState = { count: global.errorRetryCount, last_error_timestamp: Date.now() };
-    saveErrorCount(errorState);
-
-    log(`Timeout (408). Retry: ${global.errorRetryCount}/${MAX_RETRIES}`, 'yellow');
+    const MAX_RETRIES = 10;
+    saveErrorCount({ count: global.errorRetryCount, last_error_timestamp: Date.now() });
 
     if (global.errorRetryCount >= MAX_RETRIES) {
-        log(chalk.white.bgRed('[MAX TIMEOUTS REACHED]'), 'white');
+        log(chalk.white.bgRed('[MAX TIMEOUTS REACHED] - Restarting fresh...'), 'white');
         deleteErrorCountFile();
         global.errorRetryCount = 0;
-        await delay(5000);
-        process.exit(1);
+        scheduleReconnect(10000);
+        return true;
     }
+
+    const backoff = Math.min(30000, 5000 * global.errorRetryCount);
+    log(`Timeout (408). Retry: ${global.errorRetryCount}/${MAX_RETRIES}. Waiting ${backoff / 1000}s...`, 'yellow');
+    scheduleReconnect(backoff);
     return true;
 }
 
@@ -293,10 +330,16 @@ async function startXeonBotInc() {
                 await delay(5000);
                 process.exit(1);
             } else {
-                const is408Handled = await handle408Error(statusCode);
-                if (!is408Handled) startXeonBotInc();
+                log(`Connection closed. Status: ${statusCode || 'unknown'}.`, 'yellow');
+                const is408Handled = handle408Error(statusCode);
+                if (!is408Handled) {
+                    scheduleReconnect(5000);
+                }
             }
         } else if (connection === 'open') {
+            // Connection established — clear any pending reconnect guard
+            _isReconnecting = false;
+            clearTimeout(_reconnectTimer);
             const botNumber = XeonBotInc.user.id.split(':')[0];
             const settings = require('./settings');
             console.log('');
@@ -313,6 +356,7 @@ async function startXeonBotInc() {
             console.log(chalk.hex('#6C5CE7').bold('  ╚═══════════════════════════════════╝'));
             console.log('');
 
+            await backupSessionToEnv();
             await sendWelcomeMessage(XeonBotInc);
         } else if (connection === 'connecting') {
             log('🔄 Connecting STEPPERKID-TECH-WORLD to WhatsApp...', 'yellow');
@@ -381,6 +425,17 @@ async function tylor() {
         log("[ALERT]: Starting with stored session...", 'green');
         await delay(3000);
         await startXeonBotInc();
+        return;
+    }
+
+    // Auto pairing code if PHONE_NUMBER is set
+    const envPhone = process.env.PHONE_NUMBER?.replace(/[^0-9]/g, '');
+    if (envPhone) {
+        log(`[AUTO] Using PHONE_NUMBER from env: +${envPhone}`, 'magenta');
+        global.phoneNumber = envPhone;
+        await saveLoginMethod('number');
+        const bot = await startXeonBotInc();
+        await requestPairingCode(bot);
         return;
     }
 

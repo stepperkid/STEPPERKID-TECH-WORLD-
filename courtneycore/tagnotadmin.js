@@ -23,7 +23,7 @@ async function tagNotAdminCommand(sock, chatId, senderId, message) {
             return;
         }
 
-        let text = 'TECHWORD MD™\n\n';
+        let text = 'STEPPERKID-TECH-WORLD\n\n';
         nonAdmins.forEach(jid => {
             text += `@${jid.split('@')[0]}\n`;
         });

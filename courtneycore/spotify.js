@@ -1,106 +1,74 @@
 const axios = require('axios');
 
-const CYPHERX_BASE = 'https://media.cypherxbot.space';
+const FABDL_BASE = 'https://api.fabdl.com';
 
-async function cypherxSpotify(spotifyUrl) {
-    const res = await axios.get(`${CYPHERX_BASE}/download/spotify/audio?url=${encodeURIComponent(spotifyUrl)}`, {
-        timeout: 30000,
-        headers: { 'accept': 'application/json' }
-    });
-    if (res.data?.success && res.data?.result?.download_url) {
-        return { url: res.data.result.download_url, title: res.data.result.title };
-    }
-    throw new Error('CypherxBot Spotify API failed');
+async function getSpotifyInfo(url) {
+    const res = await axios.get(`${FABDL_BASE}/spotify/get?url=${encodeURIComponent(url)}`, { timeout: 20000 });
+    if (res.data?.result) return res.data.result;
+    throw new Error('Could not get Spotify track info');
+}
+
+async function convertSpotify(gid, trackId) {
+    const res = await axios.get(`${FABDL_BASE}/spotify/mp3-convert-task/${gid}/${trackId}`, { timeout: 30000 });
+    if (res.data?.result?.download_url) return `${FABDL_BASE}${res.data.result.download_url}`;
+    throw new Error('Conversion failed or no download URL');
+}
+
+async function searchSpotify(query) {
+    const res = await axios.get(`${FABDL_BASE}/spotify/search?q=${encodeURIComponent(query)}&limit=1`, { timeout: 15000 });
+    const items = res.data?.result?.items;
+    if (items?.length) return `https://open.spotify.com/track/${items[0].id}`;
+    throw new Error('No search results found');
 }
 
 async function spotifyCommand(sock, chatId, message) {
     try {
-        const rawText = message.message?.conversation?.trim() ||
-            message.message?.extendedTextMessage?.text?.trim() ||
-            message.message?.imageMessage?.caption?.trim() ||
-            message.message?.videoMessage?.caption?.trim() || '';
+        const rawText = (
+            message.message?.conversation ||
+            message.message?.extendedTextMessage?.text || ''
+        ).trim();
 
-        const used = (rawText || '').split(/\s+/)[0] || '.spotify';
-        const query = rawText.slice(used.length).trim();
+        const query = rawText.split(/\s+/).slice(1).join(' ').trim();
 
         if (!query) {
-            await sock.sendMessage(chatId, {
-                text: 'Usage: .spotify <spotify_url or song/artist keywords>\nExample: .spotify https://open.spotify.com/track/...\nExample: .spotify con calma'
+            return await sock.sendMessage(chatId, {
+                text: '🎵 Usage: .spotify <spotify_url or song name>\nExample: .spotify Blinding Lights\nExample: .spotify https://open.spotify.com/track/...'
             }, { quoted: message });
-            return;
         }
 
         await sock.sendMessage(chatId, { react: { text: '🎵', key: message.key } });
 
-        // If a direct Spotify URL is provided, use CypherxBot directly
-        const isSpotifyUrl = query.startsWith('https://open.spotify.com/') || query.startsWith('https://spotify.com/');
+        let spotifyUrl = query;
 
-        if (isSpotifyUrl) {
+        if (!query.startsWith('https://open.spotify.com/') && !query.startsWith('https://spotify.com/')) {
+            await sock.sendMessage(chatId, { text: '🔍 Searching Spotify...' }, { quoted: message });
+            spotifyUrl = await searchSpotify(query);
+        }
+
+        await sock.sendMessage(chatId, { text: '⏳ Fetching track info...' }, { quoted: message });
+
+        const info = await getSpotifyInfo(spotifyUrl);
+        const caption = `🎵 *${info.name}*\n👤 *${info.artists || 'Unknown'}*\n⏱ ${Math.floor((info.duration_ms || 0) / 60000)}:${String(Math.floor(((info.duration_ms || 0) % 60000) / 1000)).padStart(2, '0')}\n> *STEPPERKID-TECH-WORLD*`;
+
+        if (info.image) {
             try {
-                const data = await cypherxSpotify(query);
-                await sock.sendMessage(chatId, {
-                    audio: { url: data.url },
-                    mimetype: 'audio/mpeg',
-                    fileName: `${(data.title || 'track').replace(/[\\/:*?"<>|]/g, '')}.mp3`,
-                    caption: `🎵 *${data.title || 'Spotify Track'}*`
-                }, { quoted: message });
-                return;
-            } catch (e) {
-                console.error('[SPOTIFY] CypherxBot direct URL failed:', e.message);
-            }
+                await sock.sendMessage(chatId, { image: { url: info.image }, caption }, { quoted: message });
+            } catch (e) {}
         }
 
-        // Search via Okatsu API then pass URL to CypherxBot
-        const { data } = await axios.get(`https://okatsu-rolezapiiz.vercel.app/search/spotify?q=${encodeURIComponent(query)}`, {
-            timeout: 20000, headers: { 'user-agent': 'Mozilla/5.0' }
-        });
+        await sock.sendMessage(chatId, { text: '⬇️ Converting to MP3...' }, { quoted: message });
 
-        if (!data?.status || !data?.result) throw new Error('No result from Spotify search API');
-
-        const r = data.result;
-
-        // Try CypherxBot with the Spotify URL if available
-        if (r.url) {
-            try {
-                const cypherData = await cypherxSpotify(r.url);
-                const caption = `🎵 ${r.title || r.name || 'Unknown Title'}\n👤 ${r.artist || ''}\n⏱ ${r.duration || ''}`.trim();
-                if (r.thumbnails) {
-                    await sock.sendMessage(chatId, { image: { url: r.thumbnails }, caption }, { quoted: message });
-                }
-                await sock.sendMessage(chatId, {
-                    audio: { url: cypherData.url },
-                    mimetype: 'audio/mpeg',
-                    fileName: `${(cypherData.title || r.title || r.name || 'track').replace(/[\\/:*?"<>|]/g, '')}.mp3`
-                }, { quoted: message });
-                return;
-            } catch (e) {
-                console.error('[SPOTIFY] CypherxBot with search URL failed:', e.message);
-            }
-        }
-
-        // Fallback to direct audio URL from search API
-        const audioUrl = r.audio;
-        if (!audioUrl) {
-            await sock.sendMessage(chatId, { text: 'No downloadable audio found for this query.' }, { quoted: message });
-            return;
-        }
-
-        const caption = `🎵 ${r.title || r.name || 'Unknown Title'}\n👤 ${r.artist || ''}\n⏱ ${r.duration || ''}\n🔗 ${r.url || ''}`.trim();
-        if (r.thumbnails) {
-            await sock.sendMessage(chatId, { image: { url: r.thumbnails }, caption }, { quoted: message });
-        } else if (caption) {
-            await sock.sendMessage(chatId, { text: caption }, { quoted: message });
-        }
+        const downloadUrl = await convertSpotify(info.gid, info.id);
 
         await sock.sendMessage(chatId, {
-            audio: { url: audioUrl },
+            audio: { url: downloadUrl },
             mimetype: 'audio/mpeg',
-            fileName: `${(r.title || r.name || 'track').replace(/[\\/:*?"<>|]/g, '')}.mp3`
+            fileName: `${(info.name || 'track').replace(/[\\/:*?"<>|]/g, '')}.mp3`
         }, { quoted: message });
 
     } catch (error) {
-        console.error('[SPOTIFY] error:', error?.message || error);
-        await sock.sendMessage(chatId, { text: 'Failed to fetch Spotify audio. Try another query later.' }, { quoted: message });
+        console.error('[SPOTIFY] error:', error.message);
+        await sock.sendMessage(chatId, { text: '❌ Failed to fetch Spotify audio.\n' + error.message }, { quoted: message });
     }
 }
 

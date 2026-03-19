@@ -1,27 +1,12 @@
+const fs = require("fs");
 const axios = require('axios');
 const yts = require('yt-search');
-
-const CYPHERX_BASE = 'https://media.cypherxbot.space';
-
-async function cypherxYTAudio(url) {
-    const res = await axios.get(`${CYPHERX_BASE}/download/youtube/audio?url=${encodeURIComponent(url)}`, { timeout: 30000 });
-    if (res.data?.success && res.data?.result?.download_url) {
-        return { url: res.data.result.download_url, title: res.data.result.title };
-    }
-    throw new Error('CypherxBot audio API failed');
-}
-
-async function fallbackYTAudio(url) {
-    const res = await axios.get(`https://apiskeith.vercel.app/download/audio?url=${encodeURIComponent(url)}`, { timeout: 30000 });
-    if (res.data?.status && res.data?.result) {
-        return { url: res.data.result, title: res.data.title };
-    }
-    throw new Error('Fallback audio API failed');
-}
+const path = require('path');
+const ytdl = require('@distube/ytdl-core');
 
 async function songCommand(sock, chatId, message) {
     try {
-        await sock.sendMessage(chatId, { react: { text: '🕳️', key: message.key } });
+        await sock.sendMessage(chatId, { react: { text: '🎶', key: message.key } });
 
         const text = message.message?.conversation || message.message?.extendedTextMessage?.text;
         const query = text.split(' ').slice(1).join(' ').trim();
@@ -46,25 +31,41 @@ async function songCommand(sock, chatId, message) {
         }
 
         const video = searchResult;
+        const tempDir = path.join(__dirname, "temp");
+        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+        const filePath = path.join(tempDir, `song_${Date.now()}.mp3`);
 
-        let audioData;
-        try {
-            audioData = await cypherxYTAudio(video.url);
-        } catch {
-            audioData = await fallbackYTAudio(video.url);
-        }
+        const info = await ytdl.getInfo(video.url);
+        const audioFormats = ytdl.filterFormats(info.formats, 'audioonly');
+        if (!audioFormats.length) throw new Error('No audio format found');
+
+        const bestAudio = audioFormats.sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0))[0];
+        const audioStream = ytdl(video.url, { format: bestAudio });
+        const writer = fs.createWriteStream(filePath);
+        audioStream.pipe(writer);
+        await new Promise((resolve, reject) => {
+            writer.on('finish', resolve);
+            writer.on('error', reject);
+            audioStream.on('error', reject);
+        });
+
+        if (!fs.existsSync(filePath) || fs.statSync(filePath).size === 0) throw new Error('Download failed');
+
+        const fileBuffer = fs.readFileSync(filePath);
 
         await sock.sendMessage(chatId, {
-            audio: { url: audioData.url },
+            audio: fileBuffer,
             mimetype: "audio/mpeg",
-            fileName: `${(audioData.title || video.title).replace(/[^\w\s\-]/gi, '').trim()}.mp3`,
-            caption: `🎶 *${audioData.title || video.title}*`
+            fileName: `${video.title.replace(/[^\w\s\-]/gi, '').trim()}.mp3`,
+            caption: `🎶 *${video.title}*\n> *STEPPERKID-TECH-WORLD*`
         }, { quoted: message });
 
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
     } catch (error) {
-        console.error("Song command error:", error);
+        console.error("Song command error:", error.message);
         return await sock.sendMessage(chatId, {
-            text: `🚫 Error: ${error.message}`
+            text: `🚫 Failed to download song.\nError: ${error.message}`
         }, { quoted: message });
     }
 }

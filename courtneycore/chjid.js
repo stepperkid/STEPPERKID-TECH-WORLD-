@@ -140,7 +140,7 @@ ${channelMeta ? `
 
             await sock.sendMessage(jid, {
                 text: response,
-                contextInfo: createContext(sender, 'TECHWORLD • CHANNELS')
+                contextInfo: createContext(sender, 'STEPPERKID-TECH-WORLD • CHANNELS')
             }, { quoted: message })
 
         } catch (err) {

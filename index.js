@@ -127,13 +127,27 @@ function sessionExists() {
     return fs.existsSync(credsPath);
 }
 
+function normalizeCredsBuffers(obj) {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(normalizeCredsBuffers);
+    if (obj.type === 'Buffer' && Array.isArray(obj.data)) {
+        return { type: 'Buffer', data: Buffer.from(obj.data).toString('base64') };
+    }
+    const out = {};
+    for (const k of Object.keys(obj)) out[k] = normalizeCredsBuffers(obj[k]);
+    return out;
+}
+
 async function downloadSessionData() {
     try {
         await fs.promises.mkdir(sessionDir, { recursive: true });
         if (!fs.existsSync(credsPath) && global.SESSION_ID) {
             const base64Data = global.SESSION_ID.includes("TRUTH-MD:~") ? 
                 global.SESSION_ID.split("TRUTH-MD:~")[1] : global.SESSION_ID;
-            await fs.promises.writeFile(credsPath, Buffer.from(base64Data, 'base64'));
+            const rawJson = Buffer.from(base64Data, 'base64').toString('utf8');
+            const parsed = JSON.parse(rawJson);
+            const normalized = normalizeCredsBuffers(parsed);
+            await fs.promises.writeFile(credsPath, JSON.stringify(normalized, null, 2));
             log('✅ Session saved', 'green');
         }
     } catch (err) { log(`Error downloading session: ${err.message}`, 'red', true); }

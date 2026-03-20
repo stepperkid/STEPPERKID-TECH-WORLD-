@@ -469,35 +469,29 @@ async function tylor() {
         return;
     }
 
-    // Non-TTY environment (server/relay) — cannot show interactive prompt
-    if (!process.stdin.isTTY) {
-        console.log(chalk.red(`
-    ╔══════════════════════════════════════════════╗
-    ║         TitanBot-Core 🛡️  — Setup Required         ║
-    ╚══════════════════════════════════════════════╝`));
-        log("No interactive console detected (running on a server).", 'red');
-        log("Set one of the following environment variables and restart:", 'yellow');
-        log("  SESSION_ID=TitanBot-Core:~<your_session_id>", 'green');
-        log("  PHONE_NUMBER=<your_whatsapp_number>  (e.g. 254712345678)", 'green');
-        log("Add them to your .env file or server environment variables.", 'yellow');
-        process.exit(1);
-    }
+    // Interactive login — works on both TTY and panel environments
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
 
-    // Interactive login
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const question = (text) => new Promise(resolve => rl.question(text, resolve));
+    const question = (prompt) => new Promise(resolve => {
+        process.stdout.write(prompt);
+        const onData = (data) => {
+            process.stdin.removeListener('data', onData);
+            resolve(data.toString().trim());
+        };
+        process.stdin.once('data', onData);
+    });
 
     console.log(chalk.cyan(`
-    ╔══════════════════════════════╗
-    ║     TitanBot-Core 🛡️ Login          ║
-    ╚══════════════════════════════╝`));
+    ╔══════════════════════════════════╗
+    ║     TitanBot-Core 🛡️  Login       ║
+    ╚══════════════════════════════════╝`));
 
     log("Choose login method:", 'yellow');
-    log("1) WhatsApp Number (Pairing Code)", 'blue');
-    log("2) TitanBot-Core:~ Session ID", 'blue');
+    log("  1) WhatsApp Number (Pairing Code)", 'blue');
+    log("  2) Session ID", 'blue');
 
-    let choice = await question("Choice (1/2): ");
-    choice = choice.trim();
+    let choice = await question("\nChoice (1/2): ");
 
     if (choice === '1') {
         let phone = await question("Enter WhatsApp number (e.g., 254104260236): ");
@@ -507,10 +501,10 @@ async function tylor() {
         const bot = await startXeonBotInc();
         await requestPairingCode(bot);
     } else if (choice === '2') {
-        let sessionId = await question("Paste TitanBot-Core:~ Session ID: ");
+        let sessionId = await question("Paste your Session ID: ");
         sessionId = sessionId.trim();
-        if (!sessionId.includes("TitanBot-Core:~")) {
-            log("Invalid! Must contain 'TitanBot-Core:~' prefix", 'red');
+        if (!isValidSessionId(sessionId)) {
+            log("Invalid Session ID! Must start with TitanBot-Core:~, TRUTH-MD:~, or TECHWORD-MD:~", 'red');
             process.exit(1);
         }
         global.SESSION_ID = sessionId;
@@ -518,7 +512,7 @@ async function tylor() {
         await downloadSessionData();
         await startXeonBotInc();
     } else {
-        log("Invalid choice", 'red');
+        log("Invalid choice. Restart and enter 1 or 2.", 'red');
         process.exit(1);
     }
 }

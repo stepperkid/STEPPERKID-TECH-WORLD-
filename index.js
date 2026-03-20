@@ -312,6 +312,12 @@ async function startXeonBotInc() {
     const { state, saveCreds } = await useMultiFileAuthState(`./session`);
     const msgRetryCounterCache = new NodeCache();
 
+    // Load required modules before socket so getMessage can reference store
+    const store = require('./lib/lightweight_store');
+    const { smsg } = require('./lib/myfunc');
+    const main = require('./main');
+    store.readFromFile();
+
     const XeonBotInc = makeWASocket({
         version,
         logger: pino({ level: 'silent' }),
@@ -324,7 +330,10 @@ async function startXeonBotInc() {
         markOnlineOnConnect: true,
         generateHighQualityLinkPreview: false,
         syncFullHistory: false,
-        getMessage: async (key) => "",
+        getMessage: async (key) => {
+            const stored = await store.loadMessage(key.remoteJid, key.id);
+            return stored?.message || undefined;
+        },
         msgRetryCounterCache,
         defaultQueryTimeoutMs: undefined,
         connectTimeoutMs: 30000,
@@ -333,12 +342,7 @@ async function startXeonBotInc() {
         fireInitQueries: true,
     });
 
-    // Load required modules
-    const store = require('./lib/lightweight_store');
-    const { smsg } = require('./lib/myfunc');
-    const main = require('./main');
     store.bind(XeonBotInc.ev);
-    store.readFromFile();
 
     // Auto-save store on interval
     const storeInterval = require('./settings').storeWriteInterval || 30000;
@@ -457,12 +461,17 @@ async function tylor() {
     // Priority: Environment SESSION_ID with any valid prefix
     const envSessionID = process.env.SESSION_ID?.trim();
     if (envSessionID && isValidSessionId(envSessionID)) {
-        log(" [PRIORITY]: Using .env TECH session", 'magenta');
-        clearSessionFiles();
         global.SESSION_ID = envSessionID;
-        await downloadSessionData();
+        if (sessionExists()) {
+            // Session already on disk — keep it intact so signal keys survive restarts
+            log(" [PRIORITY]: Using existing session (signal keys preserved)", 'magenta');
+        } else {
+            // No session on disk — restore from env for the first time
+            log(" [PRIORITY]: Restoring session from env SESSION_ID", 'magenta');
+            await downloadSessionData();
+        }
         await saveLoginMethod('session');
-        await delay(3000);
+        await delay(2000);
         await startXeonBotInc();
         return;
     }

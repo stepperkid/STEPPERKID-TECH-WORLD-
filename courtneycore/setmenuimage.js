@@ -87,20 +87,40 @@ async function setMenuImageCommand(sock, chatId, message, args) {
             const axios = require('axios');
             const FormData = require('form-data');
 
-            const form = new FormData();
-            form.append('reqtype', 'fileupload');
-            form.append('fileToUpload', fs.createReadStream(tmpPath), 'menuimage.jpg');
+            let uploadedUrl = null;
 
-            const uploadRes = await axios.post('https://catbox.moe/user.php', form, {
-                headers: form.getHeaders(),
-                timeout: 30000
-            });
+            // Try Telegra.ph first
+            try {
+                const form1 = new FormData();
+                form1.append('file', fs.createReadStream(tmpPath), { filename: 'menuimage.jpg', contentType: 'image/jpeg' });
+                const tgRes = await axios.post('https://telegra.ph/upload', form1, {
+                    headers: form1.getHeaders(),
+                    timeout: 30000
+                });
+                if (Array.isArray(tgRes.data) && tgRes.data[0]?.src) {
+                    uploadedUrl = `https://telegra.ph${tgRes.data[0].src}`;
+                }
+            } catch (e) {
+                console.error('Telegra.ph upload failed, trying catbox...', e.message);
+            }
 
-            fs.unlinkSync(tmpPath);
+            // Fallback to catbox.moe
+            if (!uploadedUrl) {
+                const form2 = new FormData();
+                form2.append('reqtype', 'fileupload');
+                form2.append('fileToUpload', fs.createReadStream(tmpPath), 'menuimage.jpg');
+                const cbRes = await axios.post('https://catbox.moe/user.php', form2, {
+                    headers: form2.getHeaders(),
+                    timeout: 30000
+                });
+                const cbUrl = cbRes.data?.trim();
+                if (cbUrl && cbUrl.startsWith('http')) uploadedUrl = cbUrl;
+            }
 
-            const uploadedUrl = uploadRes.data?.trim();
-            if (!uploadedUrl || !uploadedUrl.startsWith('http')) {
-                throw new Error('Upload failed — no URL returned');
+            if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+
+            if (!uploadedUrl) {
+                throw new Error('Upload failed — all services unavailable. Try sending a URL directly instead.');
             }
 
             saveMenuImage(uploadedUrl);

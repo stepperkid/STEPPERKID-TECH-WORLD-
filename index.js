@@ -273,14 +273,6 @@ async function sendWelcomeMessage(XeonBotInc) {
     try {
         const pNumber = XeonBotInc.user.id.split(':')[0] + '@s.whatsapp.net';
 
-        // Auto-join group (optional)
-        try {
-            await XeonBotInc.groupAcceptInvite('LTUlwPfLa2q38FFQ5AHLKg');
-            log('✅ Auto-joined WhatsApp group', 'blue');
-        } catch (e) {
-            log(`⚠️ Failed to join group: ${e.message}`, 'red');
-        }
-
         const _cp = process.platform, _ca = process.arch;
         const connPlat = (process.env.REPL_SLUG || process.env.REPL_ID) ? 'Replit' : (process.env.HEROKU_APP_NAME || process.env.DYNO) ? 'Heroku' : (process.env.RAILWAY_ENVIRONMENT) ? 'Railway' : (process.env.RENDER_SERVICE_ID) ? 'Render' : (process.env.P_SERVER_UUID || process.env.PTERODACTYL_ENVIRONMENT) ? 'Pterodactyl' : (process.env.KOYEB_APP_NAME) ? 'Koyeb' : (process.env.COOLIFY_APP_ID) ? 'Coolify' : _cp === 'linux' ? `Linux (${_ca})` : _cp === 'win32' ? `Windows (${_ca})` : _cp === 'darwin' ? `macOS (${_ca})` : `${_cp} (${_ca})`;
         const connSettings = require('./settings');

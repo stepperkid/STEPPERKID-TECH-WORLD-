@@ -3,6 +3,7 @@ const os = require('os');
 const settings = require('../settings');
 const { getMenuImageForSend } = require('./setmenuimage');
 const { getOwnerName } = require('./setownername');
+const { getBotName } = require('./setbotname');
 
 function detectPlatform() {
   const p = process.platform;
@@ -68,7 +69,7 @@ function buildMenu() {
   return `╭━━━〔 *TitanBot-Core 🛡️* 〕━━━┈⊷
 ┃★╭──────────────
 ┃★│ *Owner* : *${getOwnerName()}*
-┃★│ *Bot* : *TitanBot-Core 🛡️*
+┃★│ *Bot* : *${getBotName()}*
 ┃★│ *Time* : *${time}*
 ┃★│ *Platform* : *${detectPlatform()}*
 ┃★│ *Mode* : *${mode}*

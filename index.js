@@ -31,6 +31,25 @@ global.messageBackup = {};
 global.botname = "TitanBot-Core 🛡️";
 global.themeemoji = "•";
 
+// --- Ensure required data directory and default files exist ---
+(function initDataDir() {
+    const dataDir = path.join(__dirname, 'data');
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+
+    const defaults = {
+        'messageCount.json': { total: 0, users: {}, isPublic: true },
+        'ownername.json': { name: null },
+        'botname.json': { name: null },
+        'prefix.json': { prefix: '.' }
+    };
+    for (const [file, content] of Object.entries(defaults)) {
+        const filePath = path.join(dataDir, file);
+        if (!fs.existsSync(filePath)) {
+            fs.writeFileSync(filePath, JSON.stringify(content, null, 2));
+        }
+    }
+})();
+
 // --- Reconnect Guard (prevents concurrent reconnect loops) ---
 let _isReconnecting = false;
 let _reconnectTimer = null;

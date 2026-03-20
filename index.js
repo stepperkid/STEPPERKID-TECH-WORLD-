@@ -309,6 +309,10 @@ async function startXeonBotInc() {
     store.bind(XeonBotInc.ev);
     store.readFromFile();
 
+    // Auto-save store on interval
+    const storeInterval = require('./settings').storeWriteInterval || 30000;
+    setInterval(() => store.writeToFile(), storeInterval);
+
     // Message handling
     XeonBotInc.ev.on('messages.upsert', async chatUpdate => {
         const mek = chatUpdate.messages[0];
@@ -496,7 +500,7 @@ async function tylor() {
 // --- Suppress noisy errors (Bad MAC, decryption, protocol noise) ---
 const stderrNoisy = [
     /bad mac/i, /hmac/i, /decrypt/i, /failed to decrypt/i,
-    /error in ws/i, /stream errored/i, /precondition/i
+    /stream errored/i, /precondition/i
 ];
 const sessionDumpPatterns = [
     /Closing open session in favor of incoming prekey bundle/,
@@ -557,9 +561,7 @@ console.error = function(...args) {
 // --- Start Bot ---
 const noisyPatterns = [
     /bad mac/i, /hmac/i, /decrypt/i, /failed to decrypt/i,
-    /error in ws/i, /stream errored/i, /precondition/i,
-    /ERR_NOT_FOUND/i, /ECONNRESET/i, /ETIMEDOUT/i,
-    /rate-overlimit/i, /connection closed/i
+    /stream errored/i, /precondition/i, /rate-overlimit/i
 ];
 tylor().catch(err => log(`Start error: ${err.message}`, 'red', true));
 process.on('uncaughtException', (err) => {
@@ -572,11 +574,8 @@ process.on('unhandledRejection', (err) => {
     log(`Unhandled: ${msg}`, 'red', true);
 });
 
-// Auto-restart on file changes
-let file = require.resolve(__filename);
-fs.watchFile(file, () => {
-    fs.unwatchFile(file);
-    log(chalk.redBright(`Updated ${__filename}`), 'yellow');
-    delete require.cache[file];
-    require(file);
+// Clean exit on SIGTERM so the workflow runner can restart properly
+process.on('SIGTERM', () => {
+    log('⚠️ SIGTERM received — shutting down cleanly.', 'yellow');
+    process.exit(0);
 });

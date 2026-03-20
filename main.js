@@ -158,6 +158,7 @@ const clearTmpCommand = require('./courtneycore/cleartmp');
 const setProfilePicture = require('./courtneycore/setpp');
 const { setMenuImageCommand } = require('./courtneycore/setmenuimage');
 const { setOwnerNameCommand } = require('./courtneycore/setownername');
+const { setBotNameCommand } = require('./courtneycore/setbotname');
 const { setGroupDescription, setGroupName, setGroupPhoto } = require('./courtneycore/groupmanage');
 const instagramCommand = require('./courtneycore/instagram');
 const facebookCommand = require('./courtneycore/facebook');
@@ -461,7 +462,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
         const isAdminCommand = admincommands.some(cmd => userMessage.startsWith(cmd));
 
         // List of owner commands
-        const ownercommands = ['.mode', '.autostatus', '.antidelete', '.cleartmp', '.setpp', '.setmenuimage', '.setownername', '.clearsession', '.areact', '.autoreact', '.autotyping', '.autoread', '.pmblocker', '.setprefix'];
+        const ownercommands = ['.mode', '.autostatus', '.antidelete', '.cleartmp', '.setpp', '.setmenuimage', '.setownername', '.setbotname', '.clearsession', '.areact', '.autoreact', '.autotyping', '.autoread', '.pmblocker', '.setprefix'];
         const isOwnerCommand = ownercommands.some(cmd => userMessage.startsWith(cmd));
 
         let isSenderAdmin = false;
@@ -1068,6 +1069,12 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 {
                     const name = rawText.replace(/^\.\s*setownername\s*/i, '').trim();
                     await setOwnerNameCommand(sock, chatId, message, name);
+                }
+                break;
+            case userMessage.startsWith('.setbotname'):
+                {
+                    const name = rawText.replace(/^\.\s*setbotname\s*/i, '').trim();
+                    await setBotNameCommand(sock, chatId, message, name);
                 }
                 break;
             case userMessage.startsWith('.setgdesc'):

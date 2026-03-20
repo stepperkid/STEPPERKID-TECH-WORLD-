@@ -159,6 +159,7 @@ const setProfilePicture = require('./courtneycore/setpp');
 const { setMenuImageCommand } = require('./courtneycore/setmenuimage');
 const { setOwnerNameCommand } = require('./courtneycore/setownername');
 const { setBotNameCommand } = require('./courtneycore/setbotname');
+const { botSettingsCommand } = require('./courtneycore/botsettings');
 const { setGroupDescription, setGroupName, setGroupPhoto } = require('./courtneycore/groupmanage');
 const instagramCommand = require('./courtneycore/instagram');
 const facebookCommand = require('./courtneycore/facebook');
@@ -462,7 +463,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
         const isAdminCommand = admincommands.some(cmd => userMessage.startsWith(cmd));
 
         // List of owner commands
-        const ownercommands = ['.mode', '.autostatus', '.antidelete', '.cleartmp', '.setpp', '.setmenuimage', '.setownername', '.setbotname', '.clearsession', '.areact', '.autoreact', '.autotyping', '.autoread', '.pmblocker', '.setprefix'];
+        const ownercommands = ['.mode', '.autostatus', '.antidelete', '.cleartmp', '.setpp', '.setmenuimage', '.setownername', '.setbotname', '.clearsession', '.areact', '.autoreact', '.autotyping', '.autoread', '.pmblocker', '.setprefix', '.botsettings'];
         const isOwnerCommand = ownercommands.some(cmd => userMessage.startsWith(cmd));
 
         let isSenderAdmin = false;
@@ -666,6 +667,13 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 {
                     const isOwner = message.key.fromMe || senderIsOwnerOrSudo;
                     await setPrefixCommand(sock, chatId, message, isOwner);
+                }
+                commandExecuted = true;
+                break;
+            case userMessage.startsWith('.botsettings'):
+                {
+                    const args = rawText.replace(/^\.\s*botsettings\s*/i, '').trim().split(/\s+/);
+                    await botSettingsCommand(sock, chatId, message, args, rawText);
                 }
                 commandExecuted = true;
                 break;

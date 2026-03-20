@@ -1060,13 +1060,13 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 break;
             case userMessage.startsWith('.setmenuimage'):
                 {
-                    const arg = rawText.slice(13).trim();
+                    const arg = rawText.replace(/^\.\s*setmenuimage\s*/i, '').trim();
                     await setMenuImageCommand(sock, chatId, message, arg);
                 }
                 break;
             case userMessage.startsWith('.setownername'):
                 {
-                    const name = rawText.slice(13).trim();
+                    const name = rawText.replace(/^\.\s*setownername\s*/i, '').trim();
                     await setOwnerNameCommand(sock, chatId, message, name);
                 }
                 break;

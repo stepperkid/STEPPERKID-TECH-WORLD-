@@ -1,7 +1,7 @@
 const fs = require('fs');
 const os = require('os');
 const settings = require('../settings');
-const { getMenuImage } = require('./setmenuimage');
+const { getMenuImageForSend } = require('./setmenuimage');
 
 function detectPlatform() {
   const p = process.platform;
@@ -266,7 +266,7 @@ const helpCommand = async (sock, chatId, message) => {
     const menuText = buildMenu();
     
     await sock.sendMessage(chatId, {
-      image: { url: getMenuImage() },
+      image: getMenuImageForSend(),
       caption: menuText,
       contextInfo: {
         mentionedJid: message?.sender ? [message.sender] : [],

@@ -64,7 +64,7 @@ function buildMenu() {
   const mode = getBotMode();
   const uptime = getUptime();
   const ramBar = getRamBar();
-  const time = new Date().toLocaleString();
+  const time = new Date().toLocaleTimeString();
 
   return `╭━━━〔 *TitanBot-Core 🛡️* 〕━━━┈⊷
 ┃★╭──────────────

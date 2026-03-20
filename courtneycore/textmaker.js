@@ -7,7 +7,7 @@ const channelInfo = {
     isForwarded: true,
     forwardedNewsletterMessageInfo: {
         newsletterJid: '120363400480173280@newsletter',
-        newsletterName: 'STEPPERKID-TECH-WORLD',
+        newsletterName: 'TitanBot-Core 🛡️',
         serverMessageId: -1
     }
 };
@@ -20,7 +20,7 @@ const messageTemplates = {
     }),
     success: (text, imageUrl) => ({
         image: { url: imageUrl },
-        caption: "STEPPERKID-TECH-WORLD",
+        caption: "TitanBot-Core 🛡️",
         contextInfo: channelInfo
     })
 };

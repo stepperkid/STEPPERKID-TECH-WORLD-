@@ -72,7 +72,7 @@ async function pingCommand(sock, chatId, message) {
         const ramBar = getRamBar();
 
         const premiumPing = 
-`┏━━━━━━┫ STEPPERKID-TECH-WORLD ┣━━━━━━┓
+`┏━━━━━━┫ TitanBot-Core 🛡️ ┣━━━━━━┓
 ┃  ⚡ *BOT SPEED TEST* ⚡
 ┣━━━━━━━━━━━━━━━━━━━━━
 ┃  🚀 *Latency*    : ${latency}ms
@@ -86,7 +86,7 @@ async function pingCommand(sock, chatId, message) {
 ┃  🟢 *Status* : Fully Active & Stable
 ┗━━━━━━━━━━━━━━━━━━━━━
 
-> © 2025 STEPPERKID-TECH-WORLD • Powered by NodeJS + Baileys`;
+> © 2025 TitanBot-Core 🛡️ • Powered by NodeJS + Baileys`;
 
         await sock.sendMessage(chatId, {
             text: premiumPing,

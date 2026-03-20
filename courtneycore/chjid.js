@@ -125,7 +125,7 @@ ${config.PREFIX}channeljid 120363...@newsletter
 ┗──────────────⊷
 
 ┏─『 ᴍᴇᴛʜᴏᴅ 』──⊷
-│ https://github.com/Courtney250/TECHWORD-MD
+│ https://github.com/Courtney250/TitanBot-Core
 ┗──────────────⊷
 ${channelMeta ? `
 ┏─『 ᴄʜᴀɴɴᴇʟ ᴅᴇᴛᴀɪʟs 』──⊷
@@ -140,7 +140,7 @@ ${channelMeta ? `
 
             await sock.sendMessage(jid, {
                 text: response,
-                contextInfo: createContext(sender, 'STEPPERKID-TECH-WORLD • CHANNELS')
+                contextInfo: createContext(sender, 'TitanBot-Core 🛡️ • CHANNELS')
             }, { quoted: message })
 
         } catch (err) {

@@ -1,4 +1,4 @@
-# TECHWORD-MD WhatsApp Bot
+# TitanBot-Core 🛡️ WhatsApp Bot
 
 ## Overview
 A Node.js WhatsApp bot built with the Baileys library. Supports group management, media tools, AI chat, stickers, and many other commands.
@@ -12,7 +12,7 @@ A Node.js WhatsApp bot built with the Baileys library. Supports group management
 - **Config**: `config.js` — API keys and global config, `settings.js` — bot settings
 
 ## Setup
-1. Set the `SESSION_ID` environment variable with a valid `TRUTH-MD:~` prefixed session ID, OR
+1. Set the `SESSION_ID` environment variable with a valid `TitanBot-Core:~` prefixed session ID, OR
 2. Run the bot and choose login method (pairing code or session ID)
 
 ## Running

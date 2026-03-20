@@ -84,7 +84,7 @@ async function facebookCommand(sock, chatId, message) {
             }, { quoted: message });
         }
 
-        const caption = `📘 *${videoData.title || 'Facebook Video'}*\n> *STEPPERKID-TECH-WORLD*`;
+        const caption = `📘 *${videoData.title || 'Facebook Video'}*\n> *TitanBot-Core 🛡️*`;
 
         try {
             await sock.sendMessage(chatId, {

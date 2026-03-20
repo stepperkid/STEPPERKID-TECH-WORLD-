@@ -49,7 +49,7 @@ async function tiktokCommand(sock, chatId, message) {
 
         const data = await tikwmDownload(url);
 
-        const caption = `🎵 *${data.title}*\n> *STEPPERKID-TECH-WORLD*`;
+        const caption = `🎵 *${data.title}*\n> *TitanBot-Core 🛡️*`;
 
         if (data.cover) {
             try {

@@ -108,7 +108,7 @@ async function instagramCommand(sock, chatId, message) {
             if (!media?.url) continue;
             try {
                 const isVideo = media.type === 'video' || url.includes('/reel/') || url.includes('/tv/') || media.url.includes('.mp4');
-                const caption = i === 0 ? `📷 *Instagram Media*\n> *STEPPERKID-TECH-WORLD*` : `Part ${i + 1}`;
+                const caption = i === 0 ? `📷 *Instagram Media*\n> *TitanBot-Core 🛡️*` : `Part ${i + 1}`;
 
                 if (isVideo) {
                     await sock.sendMessage(chatId, {

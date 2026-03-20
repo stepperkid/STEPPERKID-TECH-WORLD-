@@ -63,7 +63,7 @@ async function playCommand(sock, chatId, message) {
             document: fileBuffer,
             mimetype: "audio/mpeg",
             fileName: `${cleanTitle.substring(0, 100)}.mp3`,
-            caption: `🎵 *${video.title}*\n> *STEPPERKID-TECH-WORLD*`
+            caption: `🎵 *${video.title}*\n> *TitanBot-Core 🛡️*`
         }, { quoted: message });
 
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);

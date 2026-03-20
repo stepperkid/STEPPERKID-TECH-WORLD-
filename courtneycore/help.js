@@ -63,10 +63,10 @@ function buildMenu() {
   const ramBar = getRamBar();
   const time = new Date().toLocaleString();
 
-  return `╭━━━〔 *STEPPERKID-TECH-WORLD* 〕━━━┈⊷
+  return `╭━━━〔 *TitanBot-Core 🛡️* 〕━━━┈⊷
 ┃★╭──────────────
 ┃★│ *Owner* : *COURTNEY*
-┃★│ *Bot* : *STEPPERKID-TECH-WORLD*
+┃★│ *Bot* : *TitanBot-Core 🛡️*
 ┃★│ *Time* : *${time}*
 ┃★│ *Platform* : *${detectPlatform()}*
 ┃★│ *Mode* : *${mode}*
@@ -254,7 +254,7 @@ function buildMenu() {
 ┃◈└───────────┈⊷
 ╰──────────────┈⊷
 
-> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ COURTNEY | STEPPERKID-TECH-WORLD`.trim();
+> © ᴘᴏᴡᴇʀᴇᴅ ʙʏ COURTNEY | TitanBot-Core 🛡️`.trim();
 }
 
 const helpCommand = async (sock, chatId, message) => {
@@ -273,7 +273,7 @@ const helpCommand = async (sock, chatId, message) => {
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
           newsletterJid: '120363409714698622@newsletter',
-          newsletterName: 'STEPPERKID-TECH-WORLD',
+          newsletterName: 'TitanBot-Core 🛡️',
           serverMessageId: 143
         }
       }
@@ -289,7 +289,7 @@ const helpCommand = async (sock, chatId, message) => {
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
           newsletterJid: '0029VbCafMZBA1f42UxcYW0D@newsletter',
-          newsletterName: 'STEPPERKID-TECH-WORLD',
+          newsletterName: 'TitanBot-Core 🛡️',
           serverMessageId: 143
         }
       }

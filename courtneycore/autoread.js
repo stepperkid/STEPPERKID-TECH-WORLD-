@@ -32,7 +32,7 @@ async function autoreadCommand(sock, chatId, message) {
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
                         newsletterJid: '120363400480173280@newsletter',
-                        newsletterName: 'STEPPERKID-TECH-WORLD',
+                        newsletterName: 'TitanBot-Core 🛡️',
                         serverMessageId: -1
                     }
                 }
@@ -63,7 +63,7 @@ async function autoreadCommand(sock, chatId, message) {
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
                             newsletterJid: '120363400480173280@newsletter',
-                            newsletterName: 'STEPPERKID-TECH-WORLD',
+                            newsletterName: 'TitanBot-Core 🛡️',
                             serverMessageId: -1
                         }
                     }
@@ -86,7 +86,7 @@ async function autoreadCommand(sock, chatId, message) {
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
                     newsletterJid: '120363400480173280@newsletter',
-                    newsletterName: 'STEPPERKID-TECH-WORLD',
+                    newsletterName: 'TitanBot-Core 🛡️',
                     serverMessageId: -1
                 }
             }
@@ -101,7 +101,7 @@ async function autoreadCommand(sock, chatId, message) {
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
                     newsletterJid: '120363400480173280@newsletter',
-                    newsletterName: 'STEPPERKID-TECH-WORLD',
+                    newsletterName: 'TitanBot-Core 🛡️',
                     serverMessageId: -1
                 }
             }

@@ -1,5 +1,5 @@
 {
-  "name": "TECHWORD-MD",
+  "name": "TitanBot-Core",
   "version": "1.0.0",
   "description": "Simple nodejs WhatsApp Bot by courtney",
   "main": "index.js",

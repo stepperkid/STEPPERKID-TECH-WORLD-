@@ -5,7 +5,7 @@ require('dotenv').config()
 // Keep-alive HTTP server on port 5000
 const express = require('express');
 const _app = express();
-_app.get('/', (req, res) => res.send('STEPPERKID-TECH-WORLD Bot is running!'));
+_app.get('/', (req, res) => res.send('TitanBot-Core 🛡️ Bot is running!'));
 _app.listen(5000, '0.0.0.0', () => console.log('Keep-alive server on port 5000'));
 const chalk = require('chalk');
 const path = require('path');
@@ -28,7 +28,7 @@ require('dotenv').config();
 global.isBotConnected = false;
 global.errorRetryCount = 0;
 global.messageBackup = {};
-global.botname = "STEPPERKID-TECH-WORLD";
+global.botname = "TitanBot-Core 🛡️";
 global.themeemoji = "•";
 
 // --- Reconnect Guard (prevents concurrent reconnect loops) ---
@@ -58,7 +58,7 @@ const SESSION_ERROR_FILE = path.join(__dirname, 'sessionErrorCount.json');
 
 // --- Logging ---
 function log(message, color = 'white', isError = false) {
-    const prefix = chalk.cyan.bold('[ STEPPERKID-TECH-WORLD ]');
+    const prefix = chalk.cyan.bold('[ TitanBot-Core 🛡️ ]');
     const logFunc = isError ? console.error : console.log;
     logFunc(`${prefix} ${chalk[color](message)}`);
 }
@@ -142,8 +142,8 @@ async function downloadSessionData() {
     try {
         await fs.promises.mkdir(sessionDir, { recursive: true });
         if (!fs.existsSync(credsPath) && global.SESSION_ID) {
-            const base64Data = global.SESSION_ID.includes("TRUTH-MD:~") ? 
-                global.SESSION_ID.split("TRUTH-MD:~")[1] : global.SESSION_ID;
+            const base64Data = global.SESSION_ID.includes("TitanBot-Core:~") ? 
+                global.SESSION_ID.split("TitanBot-Core:~")[1] : global.SESSION_ID;
             const rawJson = Buffer.from(base64Data, 'base64').toString('utf8');
             const parsed = JSON.parse(rawJson);
             const normalized = normalizeCredsBuffers(parsed);
@@ -158,7 +158,7 @@ async function backupSessionToEnv() {
         if (!fs.existsSync(credsPath)) return;
         const credsData = await fs.promises.readFile(credsPath);
         const base64 = credsData.toString('base64');
-        const sessionId = `TRUTH-MD:~${base64}`;
+        const sessionId = `TitanBot-Core:~${base64}`;
         let envContent = '';
         if (fs.existsSync('.env')) envContent = fs.readFileSync('.env', 'utf8');
         if (envContent.includes('SESSION_ID=')) {
@@ -188,8 +188,8 @@ async function requestPairingCode(socket) {
 // --- Session Validation ---
 async function checkAndHandleSessionFormat() {
     const sessionId = process.env.SESSION_ID?.trim();
-    if (sessionId && !sessionId.startsWith('TRUTH-MD:~')) {
-        log(chalk.white.bgRed('[ERROR]: SESSION_ID must start with "TRUTH-MD:~"'), 'white');
+    if (sessionId && !sessionId.startsWith('TitanBot-Core:~')) {
+        log(chalk.white.bgRed('[ERROR]: SESSION_ID must start with "TitanBot-Core:~"'), 'white');
         log('Cleaning .env...', 'red');
 
         try {
@@ -255,7 +255,7 @@ async function sendWelcomeMessage(XeonBotInc) {
         const connSettings = require('./settings');
         await XeonBotInc.sendMessage(pNumber, {
             text: `┏━━━━━✧ CONNECTED ✧━━━━━━━
-┃✧ Bot: STEPPERKID-TECH-WORLD
+┃✧ Bot: TitanBot-Core 🛡️
 ┃✧ Status: Active & Online
 ┃✧ Time: ${new Date().toLocaleString()}
 ┃✧ Platform: ${connPlat}
@@ -266,7 +266,7 @@ async function sendWelcomeMessage(XeonBotInc) {
         global.isBotConnected = true;
         deleteErrorCountFile();
         global.errorRetryCount = 0;
-        log('✅ STEPPERKID-TECH-WORLD connected successfully', 'green');
+        log('✅ TitanBot-Core 🛡️ connected successfully', 'green');
     } catch (e) {
         log(`Welcome message error: ${e.message}`, 'red', true);
         global.isBotConnected = false;
@@ -274,7 +274,7 @@ async function sendWelcomeMessage(XeonBotInc) {
 }
 
 async function startXeonBotInc() {
-    log('Connecting STEPPERKID-TECH-WORLD...', 'cyan');
+    log('Connecting TitanBot-Core 🛡️...', 'cyan');
     const { version } = await fetchLatestBaileysVersion();
     await fs.promises.mkdir(sessionDir, { recursive: true });
 
@@ -358,7 +358,7 @@ async function startXeonBotInc() {
             const settings = require('./settings');
             console.log('');
             console.log(chalk.hex('#6C5CE7').bold('  ╔═══════════════════════════════════╗'));
-            console.log(chalk.hex('#6C5CE7').bold('  ║') + chalk.hex('#00CEC9').bold('     STEPPERKID-TECH-WORLD  -  ONLINE     ') + chalk.hex('#6C5CE7').bold('║'));
+            console.log(chalk.hex('#6C5CE7').bold('  ║') + chalk.hex('#00CEC9').bold('     TitanBot-Core 🛡️  -  ONLINE     ') + chalk.hex('#6C5CE7').bold('║'));
             console.log(chalk.hex('#6C5CE7').bold('  ╠═══════════════════════════════════╣'));
             console.log(chalk.hex('#6C5CE7').bold('  ║') + chalk.hex('#DFE6E9')(` Number  : +${botNumber}`.padEnd(34)) + chalk.hex('#6C5CE7').bold('║'));
             console.log(chalk.hex('#6C5CE7').bold('  ║') + chalk.hex('#DFE6E9')(` Version : ${settings.version || '1.0.0'}`.padEnd(34)) + chalk.hex('#6C5CE7').bold('║'));
@@ -373,7 +373,7 @@ async function startXeonBotInc() {
             await backupSessionToEnv();
             await sendWelcomeMessage(XeonBotInc);
         } else if (connection === 'connecting') {
-            log('🔄 Connecting STEPPERKID-TECH-WORLD to WhatsApp...', 'yellow');
+            log('🔄 Connecting TitanBot-Core 🛡️ to WhatsApp...', 'yellow');
         }
     });
 
@@ -393,7 +393,7 @@ async function startXeonBotInc() {
                     antiCallNotified.add(callerJid);
                     setTimeout(() => antiCallNotified.delete(callerJid), 60000);
                     await XeonBotInc.sendMessage(callerJid, { 
-                        text: '📵 STEPPERKID-TECH-WORLD: Calls are not allowed. You have been blocked.' 
+                        text: '📵 TitanBot-Core 🛡️: Calls are not allowed. You have been blocked.' 
                     });
                 }
             }
@@ -421,7 +421,7 @@ async function tylor() {
 
     // Priority: Environment SESSION_ID with courtney:~ prefix
     const envSessionID = process.env.SESSION_ID?.trim();
-    if (envSessionID && envSessionID.startsWith('TRUTH-MD')) {
+    if (envSessionID && envSessionID.startsWith('TitanBot-Core')) {
         log(" [PRIORITY]: Using .env TECH session", 'magenta');
         clearSessionFiles();
         global.SESSION_ID = envSessionID;
@@ -432,7 +432,7 @@ async function tylor() {
         return;
     }
 
-    log("[ALERT] No STEPPERKID-TECH-WORLD:~ session in .env, checking stored...", 'yellow');
+    log("[ALERT] No TitanBot-Core 🛡️:~ session in .env, checking stored...", 'yellow');
     await checkSessionIntegrityAndClean();
 
     if (sessionExists()) {
@@ -459,7 +459,7 @@ async function tylor() {
 
     console.log(chalk.cyan(`
     ╔══════════════════════════════╗
-    ║     STEPPERKID-TECH-WORLD Login          ║
+    ║     TitanBot-Core 🛡️ Login          ║
     ╚══════════════════════════════╝`));
 
     log("Choose login method:", 'yellow');
@@ -477,10 +477,10 @@ async function tylor() {
         const bot = await startXeonBotInc();
         await requestPairingCode(bot);
     } else if (choice === '2') {
-        let sessionId = await question("Paste TRUTH-MD:~ Session ID: ");
+        let sessionId = await question("Paste TitanBot-Core:~ Session ID: ");
         sessionId = sessionId.trim();
-        if (!sessionId.includes("TRUTH-MD:~")) {
-            log("Invalid! Must contain 'TRUTH-MD:~' prefix", 'red');
+        if (!sessionId.includes("TitanBot-Core:~")) {
+            log("Invalid! Must contain 'TitanBot-Core:~' prefix", 'red');
             process.exit(1);
         }
         global.SESSION_ID = sessionId;

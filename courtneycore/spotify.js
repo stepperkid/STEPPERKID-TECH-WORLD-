@@ -48,7 +48,7 @@ async function spotifyCommand(sock, chatId, message) {
         await sock.sendMessage(chatId, { text: '⏳ Fetching track info...' }, { quoted: message });
 
         const info = await getSpotifyInfo(spotifyUrl);
-        const caption = `🎵 *${info.name}*\n👤 *${info.artists || 'Unknown'}*\n⏱ ${Math.floor((info.duration_ms || 0) / 60000)}:${String(Math.floor(((info.duration_ms || 0) % 60000) / 1000)).padStart(2, '0')}\n> *STEPPERKID-TECH-WORLD*`;
+        const caption = `🎵 *${info.name}*\n👤 *${info.artists || 'Unknown'}*\n⏱ ${Math.floor((info.duration_ms || 0) / 60000)}:${String(Math.floor(((info.duration_ms || 0) % 60000) / 1000)).padStart(2, '0')}\n> *TitanBot-Core 🛡️*`;
 
         if (info.image) {
             try {

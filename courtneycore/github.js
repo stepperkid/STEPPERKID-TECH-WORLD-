@@ -10,7 +10,7 @@ const path = require('path');
  * @param {Object} message - Original message object for quoting
  */
 async function githubCommand(sock, chatId, message) {
-  const repoUrl = 'https://api.github.com/repos/courtney250/TECHWORD-MD';
+  const repoUrl = 'https://api.github.com/repos/courtney250/TitanBot-Core';
   const imagePath = path.resolve('./image.jpg');
 
   // Check if image exists first
@@ -48,7 +48,7 @@ async function githubCommand(sock, chatId, message) {
     const formatNumber = (num) => num.toLocaleString('en-US');
 
     const caption = `
-*⚡ STEPPERKID-TECH-WORLD ⚡*
+*⚡ TitanBot-Core 🛡️ ⚡*
 
 ✨ *Repository* : \`${data.full_name}\`
 ⭐ *Stars* : ${formatNumber(data.stargazers_count)}
@@ -58,7 +58,7 @@ async function githubCommand(sock, chatId, message) {
 📅 *Last Update* : ${moment(data.updated_at).tz('Asia/Jakarta').format('DD/MM/YYYY - HH:mm:ss')} (WIB)
 🔗 *URL* : ${data.html_url}
 
-> Powered by *STEPPERKID-TECH-WORLD*
+> Powered by *TitanBot-Core 🛡️*
 `.trim();
 
     const imageBuffer = fs.readFileSync(imagePath);

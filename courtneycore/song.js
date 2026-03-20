@@ -57,7 +57,7 @@ async function songCommand(sock, chatId, message) {
             audio: fileBuffer,
             mimetype: "audio/mpeg",
             fileName: `${video.title.replace(/[^\w\s\-]/gi, '').trim()}.mp3`,
-            caption: `🎶 *${video.title}*\n> *STEPPERKID-TECH-WORLD*`
+            caption: `🎶 *${video.title}*\n> *TitanBot-Core 🛡️*`
         }, { quoted: message });
 
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);

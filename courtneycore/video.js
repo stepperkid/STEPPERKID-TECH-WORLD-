@@ -81,7 +81,7 @@ async function videoCommand(sock, chatId, message) {
             video: fs.readFileSync(filePath),
             mimetype: 'video/mp4',
             fileName: `${videoTitle.replace(/[^\w\s\-]/gi, '').trim()}.mp4`,
-            caption: `🎬 *${videoTitle}*\n> *STEPPERKID-TECH-WORLD*`
+            caption: `🎬 *${videoTitle}*\n> *TitanBot-Core 🛡️*`
         }, { quoted: message });
 
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);

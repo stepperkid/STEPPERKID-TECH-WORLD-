@@ -25,7 +25,7 @@ function getMenuImageForSend() {
     const img = getMenuImage();
     if (img.type === 'file') {
         try {
-            return { buffer: fs.readFileSync(img.path) };
+            return fs.readFileSync(img.path);
         } catch {}
     }
     return { url: img.url || DEFAULT_IMAGE_URL };

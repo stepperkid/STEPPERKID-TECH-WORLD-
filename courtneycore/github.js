@@ -10,7 +10,7 @@ const path = require('path');
  * @param {Object} message - Original message object for quoting
  */
 async function githubCommand(sock, chatId, message) {
-  const repoUrl = 'https://api.github.com/repos/courtney250/TitanBot-Core';
+  const repoUrl = 'https://api.github.com/repos/stepperkid254/TitanBot-Core-';
   const imagePath = path.resolve('./image.jpg');
 
   // Check if image exists first

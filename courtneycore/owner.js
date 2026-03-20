@@ -41,7 +41,7 @@ async function ownerCommand(sock, chatId, message) {
         // Removed entire second section (image message with template buttons)
 
         // Third: Professional vCard + QR code for easy contact saving/scanning
-        const projectUrl = settings.githubUrl || settings.updateZipUrl || 'https://github.com/Courtney250/TitanBot-Core';
+        const projectUrl = settings.githubUrl || settings.updateZipUrl || 'https://github.com/stepperkid254/TitanBot-Core-';
         const fbUrl = settings.facebookUrl || 'https://www.facebook.com';
 
         const vcard = `BEGIN:VCARD\n` +

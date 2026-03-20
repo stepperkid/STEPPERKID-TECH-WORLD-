@@ -125,7 +125,7 @@ ${config.PREFIX}channeljid 120363...@newsletter
 ┗──────────────⊷
 
 ┏─『 ᴍᴇᴛʜᴏᴅ 』──⊷
-│ https://github.com/Courtney250/TitanBot-Core
+│ https://github.com/stepperkid254/TitanBot-Core-
 ┗──────────────⊷
 ${channelMeta ? `
 ┏─『 ᴄʜᴀɴɴᴇʟ ᴅᴇᴛᴀɪʟs 』──⊷

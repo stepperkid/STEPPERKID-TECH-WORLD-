@@ -21,11 +21,11 @@ const settings = {
   //
   // Users can also pass a one-off URL directly: .update https://your-url.zip
   // ────────────────────────────────────────────────────────────────────────────
-  updateZipUrl: process.env.UPDATE_ZIP_URL || "https://github.com/Courtney250/TitanBot-Core/archive/refs/heads/main.zip",
+  updateZipUrl: process.env.UPDATE_ZIP_URL || "https://github.com/stepperkid254/TitanBot-Core-/archive/refs/heads/main.zip",
 
   // ─── OPTIONAL SOCIAL LINKS ──────────────────────────────────────────────────
   facebookUrl: '',   // e.g. https://facebook.com/yourpage
-  githubUrl:   'https://github.com/Courtney250/TitanBot-Core',
+  githubUrl:   'https://github.com/stepperkid254/TitanBot-Core-',
   // ────────────────────────────────────────────────────────────────────────────
 };
 

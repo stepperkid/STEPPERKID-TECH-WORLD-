@@ -138,12 +138,24 @@ function normalizeCredsBuffers(obj) {
     return out;
 }
 
+const VALID_PREFIXES = ['TitanBot-Core:~', 'TRUTH-MD:~', 'TECHWORD-MD:~', 'COURTNEY:~'];
+
+function stripSessionPrefix(sessionId) {
+    for (const prefix of VALID_PREFIXES) {
+        if (sessionId.includes(prefix)) return sessionId.split(prefix)[1];
+    }
+    return sessionId;
+}
+
+function isValidSessionId(sessionId) {
+    return VALID_PREFIXES.some(p => sessionId.startsWith(p));
+}
+
 async function downloadSessionData() {
     try {
         await fs.promises.mkdir(sessionDir, { recursive: true });
         if (!fs.existsSync(credsPath) && global.SESSION_ID) {
-            const base64Data = global.SESSION_ID.includes("TitanBot-Core:~") ? 
-                global.SESSION_ID.split("TitanBot-Core:~")[1] : global.SESSION_ID;
+            const base64Data = stripSessionPrefix(global.SESSION_ID);
             const rawJson = Buffer.from(base64Data, 'base64').toString('utf8');
             const parsed = JSON.parse(rawJson);
             const normalized = normalizeCredsBuffers(parsed);
@@ -188,8 +200,8 @@ async function requestPairingCode(socket) {
 // --- Session Validation ---
 async function checkAndHandleSessionFormat() {
     const sessionId = process.env.SESSION_ID?.trim();
-    if (sessionId && !sessionId.startsWith('TitanBot-Core:~')) {
-        log(chalk.white.bgRed('[ERROR]: SESSION_ID must start with "TitanBot-Core:~"'), 'white');
+    if (sessionId && !isValidSessionId(sessionId)) {
+        log(chalk.white.bgRed('[ERROR]: Invalid SESSION_ID prefix. Accepted: TitanBot-Core:~, TRUTH-MD:~, TECHWORD-MD:~'), 'white');
         log('Cleaning .env...', 'red');
 
         try {
@@ -423,9 +435,9 @@ async function tylor() {
     await checkAndHandleSessionFormat();
     global.errorRetryCount = loadErrorCount().count;
 
-    // Priority: Environment SESSION_ID with TitanBot-Core:~ prefix
+    // Priority: Environment SESSION_ID with any valid prefix
     const envSessionID = process.env.SESSION_ID?.trim();
-    if (envSessionID && envSessionID.startsWith('TitanBot-Core')) {
+    if (envSessionID && isValidSessionId(envSessionID)) {
         log(" [PRIORITY]: Using .env TECH session", 'magenta');
         clearSessionFiles();
         global.SESSION_ID = envSessionID;

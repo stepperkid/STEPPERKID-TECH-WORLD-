@@ -147,7 +147,16 @@ function buildMenu() {
 ┃◈┃• mode
 ┃◈┃• update
 ┃◈┃• settings
-┃◈┃•autostatus
+┃◈┃• autostatus
+┃◈└───────────┈⊷
+╰──────────────┈⊷
+
+╭━━〔 *BOT SETTINGS* 〕━━┈⊷
+┃◈╭─────────────·๏
+┃◈┃• botsettings
+┃◈┃• setprefix
+┃◈┃• setbotname
+┃◈┃• setownername
 ┃◈└───────────┈⊷
 ╰──────────────┈⊷
 

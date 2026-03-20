@@ -1,6 +1,6 @@
 const settings = {
   packname: 'TitanBot-Core 🛡️',
-  author: 'Stepperkid',
+  author: 'TitanBot-Core',
   botName: "TitanBot-Core 🛡️",
   botOwner: 'COURTNEY🦅', // Your name
   ownerNumber: '254743037984', //Set your number here without + symbol, just add country code & number without any space

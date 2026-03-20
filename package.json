@@ -1,7 +1,7 @@
 {
   "name": "TitanBot-Core",
   "version": "1.0.0",
-  "description": "Simple nodejs WhatsApp Bot by courtney",
+  "description": "Simple nodejs WhatsApp Bot by TitanBot-Core 🛡️",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -18,7 +18,7 @@
   "keywords": [
     "whatsapp-bot"
   ],
-  "author": "Courtney",
+  "author": "TitanBot-Core",
   "license": "ISC",
   "dependencies": {
     "@adiwajshing/keyed-db": "^0.2.4",

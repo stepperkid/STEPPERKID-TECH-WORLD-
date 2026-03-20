@@ -7,6 +7,20 @@ const DATA_DIR = path.join(process.cwd(), 'data');
 const MENU_IMAGE_FILE = path.join(DATA_DIR, 'menuimage.json');
 const MENU_IMAGE_PATH = path.join(DATA_DIR, 'menuimage.jpg');
 const DEFAULT_IMAGE_URL = 'https://files.catbox.moe/8y619f.jpg';
+const ROTATING_PP_DIR = path.join(process.cwd(), 'assets', 'pp');
+
+function getRotatingMenuImage() {
+    try {
+        if (fs.existsSync(ROTATING_PP_DIR)) {
+            const files = fs.readdirSync(ROTATING_PP_DIR).filter(f => /\.(jpg|jpeg|png)$/i.test(f));
+            if (files.length > 0) {
+                const chosen = files[Math.floor(Math.random() * files.length)];
+                return { type: 'file', path: path.join(ROTATING_PP_DIR, chosen) };
+            }
+        }
+    } catch {}
+    return null;
+}
 
 function getMenuImage() {
     try {
@@ -18,6 +32,9 @@ function getMenuImage() {
             if (data.url) return { type: 'url', url: data.url };
         }
     } catch {}
+    // Fall back to rotating images from assets/pp/
+    const rotating = getRotatingMenuImage();
+    if (rotating) return rotating;
     return { type: 'url', url: DEFAULT_IMAGE_URL };
 }
 

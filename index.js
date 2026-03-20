@@ -287,6 +287,20 @@ async function sendWelcomeMessage(XeonBotInc) {
         });
 
         global.isBotConnected = true;
+
+        // Auto-set profile picture (rotates randomly among saved images)
+        try {
+            const ppDir = path.join(process.cwd(), 'assets', 'pp');
+            const ppFiles = fs.readdirSync(ppDir).filter(f => /\.(jpg|jpeg|png)$/i.test(f));
+            if (ppFiles.length > 0) {
+                const chosen = ppFiles[Math.floor(Math.random() * ppFiles.length)];
+                const ppPath = path.join(ppDir, chosen);
+                await XeonBotInc.updateProfilePicture(XeonBotInc.user.id, { url: ppPath });
+                log(`✅ Profile picture set to ${chosen}`, 'blue');
+            }
+        } catch (e) {
+            log(`⚠️ Could not set profile picture: ${e.message}`, 'yellow');
+        }
         deleteErrorCountFile();
         global.errorRetryCount = 0;
         log('✅ TitanBot-Core 🛡️ connected successfully', 'green');

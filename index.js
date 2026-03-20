@@ -457,6 +457,20 @@ async function tylor() {
         return;
     }
 
+    // Non-TTY environment (server/relay) — cannot show interactive prompt
+    if (!process.stdin.isTTY) {
+        console.log(chalk.red(`
+    ╔══════════════════════════════════════════════╗
+    ║         TitanBot-Core 🛡️  — Setup Required         ║
+    ╚══════════════════════════════════════════════╝`));
+        log("No interactive console detected (running on a server).", 'red');
+        log("Set one of the following environment variables and restart:", 'yellow');
+        log("  SESSION_ID=TitanBot-Core:~<your_session_id>", 'green');
+        log("  PHONE_NUMBER=<your_whatsapp_number>  (e.g. 254712345678)", 'green');
+        log("Add them to your .env file or server environment variables.", 'yellow');
+        process.exit(1);
+    }
+
     // Interactive login
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     const question = (text) => new Promise(resolve => rl.question(text, resolve));

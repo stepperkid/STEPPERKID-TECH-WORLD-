@@ -1,6 +1,6 @@
 const { getBotName, setBotNameCommand } = require('./setbotname');
 const { getOwnerName, setOwnerNameCommand } = require('./setownername');
-const { loadPrefix, setPrefixCommand } = require('./setprefix');
+const { loadPrefix, savePrefix } = require('./setprefix');
 const isOwnerOrSudo = require('../lib/isOwner');
 
 async function botSettingsCommand(sock, chatId, message, args, rawText) {
@@ -55,13 +55,35 @@ async function botSettingsCommand(sock, chatId, message, args, rawText) {
 
         if (sub === 'prefix') {
             const value = rawText.replace(/^\.\s*botsettings\s+prefix\s*/i, '').trim();
-            const fakeMessage = {
-                ...message,
-                message: {
-                    conversation: `.setprefix ${value}`
-                }
-            };
-            return await setPrefixCommand(sock, chatId, fakeMessage, isOwner);
+
+            if (!value) {
+                const current = loadPrefix();
+                return await sock.sendMessage(chatId, {
+                    text: `*⚙️ Prefix Settings*\n\nCurrent prefix: *${current}*\n\nUsage: .botsettings prefix <symbol>\nExample: .botsettings prefix !\n\n_Use .botsettings prefix . to reset to default_`
+                }, { quoted: message });
+            }
+
+            if (value.toLowerCase() === 'reset') {
+                savePrefix('.');
+                global.botPrefix = '.';
+                return await sock.sendMessage(chatId, {
+                    text: `🔄 *Prefix reset to default: .*`
+                }, { quoted: message });
+            }
+
+            if (value.length > 3) {
+                return await sock.sendMessage(chatId, {
+                    text: '❌ Prefix must be 1-3 characters long!'
+                }, { quoted: message });
+            }
+
+            const oldPrefix = loadPrefix();
+            savePrefix(value);
+            global.botPrefix = value;
+
+            return await sock.sendMessage(chatId, {
+                text: `✅ *Prefix Updated!*\n\nOld prefix: *${oldPrefix}*\nNew prefix: *${value}*\n\nAll commands now use: *${value}help*, *${value}ping*, etc.`
+            }, { quoted: message });
         }
 
         if (sub === 'botname') {

@@ -174,10 +174,22 @@ async function updateViaZip(sock, chatId, message, zipOverride) {
     return { copiedFiles: copied };
 }
 
+const UPDATE_NOTIFY_FILE = path.join(process.cwd(), 'data', 'update_notify.json');
+
+function saveUpdateNotify(chatId) {
+    try {
+        if (!fs.existsSync(path.join(process.cwd(), 'data'))) {
+            fs.mkdirSync(path.join(process.cwd(), 'data'), { recursive: true });
+        }
+        fs.writeFileSync(UPDATE_NOTIFY_FILE, JSON.stringify({ chatId }));
+    } catch {}
+}
+
 async function restartProcess(sock, chatId, message) {
     try {
         await sock.sendMessage(chatId, { text: '✅ Update complete! Restarting…' }, { quoted: message });
     } catch {}
+    saveUpdateNotify(chatId);
     try {
         // Preferred: PM2
         await run('pm2 restart all');
@@ -194,8 +206,9 @@ async function updateCommand(sock, chatId, message, zipOverride) {
     const senderId = message.key.participant || message.key.remoteJid;
     const isOwner = await isOwnerOrSudo(senderId, sock, chatId);
     
+    const prefix = global.botPrefix || '.';
     if (!message.key.fromMe && !isOwner) {
-        await sock.sendMessage(chatId, { text: 'Only bot owner or sudo can use .update' }, { quoted: message });
+        await sock.sendMessage(chatId, { text: `Only bot owner or sudo can use ${prefix}update` }, { quoted: message });
         return;
     }
     try {
@@ -217,7 +230,7 @@ async function updateCommand(sock, chatId, message, zipOverride) {
             const v = require('../settings').version || '';
             await sock.sendMessage(chatId, { text: `✅ Update done. Restarting…` }, { quoted: message });
         } catch {
-            await sock.sendMessage(chatId, { text: '✅ Restared Successfully\n Type .ping to check latest version.' }, { quoted: message });
+            await sock.sendMessage(chatId, { text: `✅ Restarted Successfully\n Type ${prefix}ping to check latest version.` }, { quoted: message });
         }
         await restartProcess(sock, chatId, message);
     } catch (err) {

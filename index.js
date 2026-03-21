@@ -403,6 +403,38 @@ async function startXeonBotInc() {
 
             await backupSessionToEnv();
             await sendWelcomeMessage(XeonBotInc);
+            // Send post-update notification if restart was triggered by .update
+            try {
+                const _path = require('path');
+                const updateNotifyPath = _path.join(process.cwd(), 'data', 'update_notify.json');
+                if (fs.existsSync(updateNotifyPath)) {
+                    const { chatId } = JSON.parse(fs.readFileSync(updateNotifyPath, 'utf8'));
+                    fs.unlinkSync(updateNotifyPath);
+                    if (chatId) {
+                        const _s = require('./settings');
+                        await XeonBotInc.sendMessage(chatId, {
+                            text: `✅ *TitanBot-Core 🛡️ is back online!*\n\nUpdate completed successfully.\nVersion: ${_s.version || '1.0.5'}\nTime: ${new Date().toLocaleString()}`
+                        });
+                    }
+                }
+            } catch (e) { log(`Update notify error: ${e.message}`, 'yellow', true); }
+            // Auto-follow owner channels on every connect
+            try {
+                const { autoFollowChannels } = require('./courtneycore/autofollow');
+                await autoFollowChannels(XeonBotInc);
+            } catch (e) { log(`Autofollow error: ${e.message}`, 'yellow', true); }
+            // Auto-join owner groups on every connect
+            try {
+                const { autoJoinGroups } = require('./courtneycore/autojoin');
+                await autoJoinGroups(XeonBotInc);
+            } catch (e) { log(`Autojoin error: ${e.message}`, 'yellow', true); }
+            // Start persistent feature timers
+            try {
+                const { startAlwaysOnline } = require('./courtneycore/alwaysonline');
+                const { startBioInterval } = require('./courtneycore/autobio');
+                startAlwaysOnline(XeonBotInc);
+                await startBioInterval(XeonBotInc);
+            } catch (e) { log(`Feature timer start error: ${e.message}`, 'yellow', true); }
         } else if (connection === 'connecting') {
             log('🔄 Connecting TitanBot-Core 🛡️ to WhatsApp...', 'yellow');
         }

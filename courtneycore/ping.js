@@ -1,6 +1,8 @@
 const os = require('os');
 const fs = require('fs');
+const { performance } = require('perf_hooks');
 const settings = require('../settings.js');
+const { getBotName } = require('./setbotname');
 
 function formatUptime(seconds) {
     const days = Math.floor(seconds / 86400);
@@ -58,13 +60,14 @@ function getRamBar() {
 
 async function pingCommand(sock, chatId, message) {
     try {
-        const startTime = Date.now();
+        const startTime = performance.now();
 
         const measuringMsg = await sock.sendMessage(chatId, {
             text: "```Measuring Speed...``` ⚡"
         }, { quoted: message });
 
-        const latency = Date.now() - startTime;
+        const latency = (performance.now() - startTime).toFixed(3);
+        const botName = getBotName();
         const uptime = formatUptime(process.uptime());
         const platform = detectPlatform();
         const mode = getBotMode();
@@ -72,10 +75,10 @@ async function pingCommand(sock, chatId, message) {
         const ramBar = getRamBar();
 
         const premiumPing = 
-`┏━━━━━━┫ TitanBot-Core 🛡️ ┣━━━━━━┓
+`┏━━━━━━┫ ${botName} ┣━━━━━━┓
 ┃  ⚡ *BOT SPEED TEST* ⚡
 ┣━━━━━━━━━━━━━━━━━━━━━
-┃  🚀 *Latency*    : ${latency}ms
+┃  🚀 *${botName} Speed:* ${latency} ms
 ┃  🕒 *Uptime*     : ${uptime}
 ┃  💾 *RAM*        : ${ramBar}
 ┃  🖥️ *Platform*   : ${platform}
@@ -86,7 +89,7 @@ async function pingCommand(sock, chatId, message) {
 ┃  🟢 *Status* : Fully Active & Stable
 ┗━━━━━━━━━━━━━━━━━━━━━
 
-> © 2025 TitanBot-Core 🛡️ • Powered by NodeJS + Baileys`;
+> © 2025 ${botName} • Powered by NodeJS + Baileys`;
 
         await sock.sendMessage(chatId, {
             text: premiumPing,

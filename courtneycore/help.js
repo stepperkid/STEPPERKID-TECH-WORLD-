@@ -146,17 +146,12 @@ function buildMenu() {
 ┃◈┃• chjid
 ┃◈┃• mode
 ┃◈┃• update
-┃◈┃• settings
-┃◈┃• autostatus
-┃◈└───────────┈⊷
-╰──────────────┈⊷
-
-╭━━〔 *BOT SETTINGS* 〕━━┈⊷
-┃◈╭─────────────·๏
+┃◈┃• getsettings
 ┃◈┃• botsettings
 ┃◈┃• setprefix
 ┃◈┃• setbotname
 ┃◈┃• setownername
+┃◈┃• autostatus
 ┃◈└───────────┈⊷
 ╰──────────────┈⊷
 

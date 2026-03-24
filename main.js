@@ -189,6 +189,7 @@ const { igsCommand } = require('./courtneycore/igs');
 const { anticallCommand, readState: readAnticallState } = require('./courtneycore/anticall');
 const { pmblockerCommand, readState: readPmBlockerState } = require('./courtneycore/pmblocker');
 const settingsCommand = require('./courtneycore/settings');
+const getSettingsCommand = require('./courtneycore/getsettings');
 const soraCommand = require('./courtneycore/sora');
 const pairCommand = require('./courtneycore/pair');
 const gitcloneCommand = require('./courtneycore/gitclone');
@@ -595,8 +596,9 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 await pairCommand(sock, chatId, message);
                 break;
 
+            case userMessage === '.getsettings':
             case userMessage === '.settings':
-                await settingsCommand(sock, chatId, message);
+                await getSettingsCommand(sock, chatId, message);
                 break;
             case userMessage.startsWith('.mode'):
                 // Check if sender is the owner

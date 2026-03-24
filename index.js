@@ -4,9 +4,17 @@ require('dotenv').config()
 
 // Keep-alive HTTP server on port 5000
 const express = require('express');
+const http = require('http');
 const _app = express();
 _app.get('/', (req, res) => res.send('TitanBot-Core 🛡️ Bot is running!'));
 _app.listen(5000, '0.0.0.0', () => console.log('Keep-alive server on port 5000'));
+
+// --- Panel Anti-idle: internal self-ping every 4 minutes ---
+setInterval(() => {
+    http.get('http://localhost:5000', (res) => {
+        res.resume();
+    }).on('error', () => {});
+}, 240000);
 const chalk = require('chalk');
 const path = require('path');
 const { 
@@ -31,6 +39,9 @@ global.messageBackup = {};
 global.botname = "TitanBot-Core 🛡️";
 global.themeemoji = "•";
 
+// --- Stability: activity tracking for watchdog ---
+let lastActivity = Date.now();
+
 // --- Ensure required data directory and default files exist ---
 (function initDataDir() {
     const dataDir = path.join(__dirname, 'data');
@@ -53,6 +64,8 @@ global.themeemoji = "•";
 // --- Reconnect Guard (prevents concurrent reconnect loops) ---
 let _isReconnecting = false;
 let _reconnectTimer = null;
+let _reconnectFailures = 0;
+const MAX_RECONNECT_FAILURES = 3;
 
 function scheduleReconnect(delayMs = 5000) {
     if (_isReconnecting) {
@@ -60,12 +73,26 @@ function scheduleReconnect(delayMs = 5000) {
         return;
     }
     _isReconnecting = true;
+    _reconnectFailures++;
     clearTimeout(_reconnectTimer);
+
+    // Full reinit after 3 failed reconnect attempts
+    if (_reconnectFailures >= MAX_RECONNECT_FAILURES) {
+        log(`🔃 ${MAX_RECONNECT_FAILURES} reconnects failed — doing full reinit...`, 'red');
+        _reconnectFailures = 0;
+        _reconnectTimer = setTimeout(async () => {
+            _isReconnecting = false;
+            global.isBotConnected = false;
+            await tylor();
+        }, delayMs + 5000);
+        return;
+    }
+
     _reconnectTimer = setTimeout(async () => {
         _isReconnecting = false;
         await startXeonBotInc();
     }, delayMs);
-    log(`🔁 Reconnect scheduled in ${delayMs / 1000}s...`, 'yellow');
+    log(`🔁 Reconnect scheduled in ${delayMs / 1000}s... (attempt ${_reconnectFailures}/${MAX_RECONNECT_FAILURES})`, 'yellow');
 }
 
 // --- Paths ---
@@ -230,8 +257,11 @@ async function checkAndHandleSessionFormat() {
             log('✅ Cleaned .env', 'green');
         } catch (e) { log(`Failed to modify .env: ${e.message}`, 'red', true); }
 
-        await delay(20000);
-        process.exit(1);
+        await delay(5000);
+        log('Clearing invalid session and restarting...', 'yellow');
+        clearSessionFiles();
+        scheduleReconnect(3000);
+        return;
     }
 }
 
@@ -342,6 +372,7 @@ async function startXeonBotInc() {
 
     // Message handling
     XeonBotInc.ev.on('messages.upsert', async chatUpdate => {
+        lastActivity = Date.now();
         const mek = chatUpdate.messages[0];
         if (!mek.message) return;
 
@@ -375,15 +406,27 @@ async function startXeonBotInc() {
                 await delay(5000);
                 process.exit(1);
             } else {
-                log(`Connection closed. Status: ${statusCode || 'unknown'}.`, 'yellow');
-                const is408Handled = handle408Error(statusCode);
-                if (!is408Handled) {
+                const reasonName = Object.entries(DisconnectReason).find(([, v]) => v === statusCode)?.[0] || 'unknown';
+                log(`Connection closed. Reason: ${reasonName} (${statusCode || 'unknown'}).`, 'yellow');
+
+                if (statusCode === DisconnectReason.connectionReplaced) {
+                    log('⚠️ Connection replaced by another session. Waiting before reconnect...', 'yellow');
+                    scheduleReconnect(15000);
+                } else if (statusCode === DisconnectReason.restartRequired) {
+                    log('🔄 Restart required by server.', 'cyan');
+                    scheduleReconnect(3000);
+                } else if (statusCode === DisconnectReason.timedOut || statusCode === DisconnectReason.connectionTimeout) {
+                    const is408Handled = handle408Error(statusCode);
+                    if (!is408Handled) scheduleReconnect(5000);
+                } else {
                     scheduleReconnect(5000);
                 }
             }
         } else if (connection === 'open') {
             // Connection established — clear any pending reconnect guard
             _isReconnecting = false;
+            _reconnectFailures = 0;
+            lastActivity = Date.now();
             clearTimeout(_reconnectTimer);
             const botNumber = XeonBotInc.user.id.split(':')[0];
             const settings = require('./settings');
@@ -476,7 +519,8 @@ async function tylor() {
         log("✨ TitanBot-Core 🛡️ core loaded", 'green');
     } catch (e) {
         log(`FATAL: Core load failed: ${e.message}`, 'red', true);
-        process.exit(1);
+        scheduleReconnect(10000);
+        return;
     }
 
     await checkAndHandleSessionFormat();
@@ -557,15 +601,15 @@ async function tylor() {
         sessionId = sessionId.trim();
         if (!isValidSessionId(sessionId)) {
             log("Invalid Session ID! Must start with TitanBot-Core:~, TRUTH-MD:~, or TECHWORD-MD:~", 'red');
-            process.exit(1);
+            log("Please restart and provide a valid Session ID.", 'yellow');
+            return;
         }
         global.SESSION_ID = sessionId;
         await saveLoginMethod('session');
         await downloadSessionData();
         await startXeonBotInc();
     } else {
-        log("Invalid choice. Restart and enter 1 or 2.", 'red');
-        process.exit(1);
+        log("Invalid choice. Please restart and enter 1 or 2.", 'red');
     }
 }
 
@@ -629,6 +673,57 @@ console.error = function(...args) {
     if (stderrNoisy.some(p => p.test(str))) return;
     origConsoleError.apply(console, args);
 };
+
+// --- Event loop keep-alive: prevents Node.js from going idle ---
+setInterval(() => {}, 1 << 30);
+
+// --- Watchdog: restart connection if bot freezes for 2+ minutes ---
+setInterval(() => {
+    if (global.isBotConnected && Date.now() - lastActivity > 120000) {
+        log('🐕 Watchdog: Bot frozen — restarting connection...', 'yellow');
+        lastActivity = Date.now();
+        scheduleReconnect(1000);
+    }
+}, 60000);
+
+// --- Heartbeat: confirm bot is alive every 60 seconds ---
+const _botStartTime = Date.now();
+setInterval(() => {
+    const uptimeSec = Math.floor((Date.now() - _botStartTime) / 1000);
+    const h = Math.floor(uptimeSec / 3600);
+    const m = Math.floor((uptimeSec % 3600) / 60);
+    const s = uptimeSec % 60;
+    log(`💓 Bot active... | Uptime: ${h}h ${m}m ${s}s`, 'green');
+}, 60000);
+
+// --- Memory control: trigger GC every 5 minutes if available ---
+setInterval(() => {
+    if (global.gc) {
+        global.gc();
+        log('🧹 GC triggered', 'grey');
+    }
+}, 300000);
+
+// --- Periodic session backup every 10 minutes ---
+setInterval(async () => {
+    try {
+        if (fs.existsSync(credsPath)) {
+            const backupPath = path.join(__dirname, 'session', 'creds.backup.json');
+            fs.copyFileSync(credsPath, backupPath);
+            log('💾 Session backed up', 'cyan');
+        }
+    } catch (e) {
+        log(`Session backup failed: ${e.message}`, 'yellow', true);
+    }
+}, 600000);
+
+// --- Signal protection: ignore SIGHUP so panels can't kill the process ---
+process.on('SIGHUP', () => {
+    log('⚡ SIGHUP received — ignoring (bot stays alive)', 'yellow');
+});
+process.on('SIGINT', () => {
+    log('⚡ SIGINT received — ignoring (bot stays alive)', 'yellow');
+});
 
 // --- Start Bot ---
 const noisyPatterns = [

@@ -13,10 +13,15 @@ function run(cmd, opts = {}) {
     });
 }
 
+// ─── Hardcoded update source ──────────────────────────────────────────────────
+const UPDATE_GITHUB_URL = 'https://github.com/stepperkid/STEPPERKID-TECH-WORLD-';
+const UPDATE_BRANCH     = 'main';
+
 function getRepoAndBranch() {
-    const repo   = (process.env.UPDATE_REPO   || settings.updateRepo   || '').trim();
-    const branch = (process.env.UPDATE_BRANCH || settings.updateBranch || 'main').trim();
-    return { repo, branch };
+    // Always pull from the hardcoded repo URL
+    const repo   = UPDATE_GITHUB_URL.replace('https://github.com/', '').trim();
+    const branch = UPDATE_BRANCH;
+    return { repo, branch, repoUrl: UPDATE_GITHUB_URL };
 }
 
 // ─── Git mode ────────────────────────────────────────────────────────────────
@@ -27,12 +32,9 @@ async function hasGitRepo() {
 }
 
 async function updateViaGit() {
-    const { repo, branch } = getRepoAndBranch();
-
-    if (repo) {
-        const remoteUrl = `https://github.com/${repo}.git`;
-        await run(`git remote set-url origin "${remoteUrl}"`).catch(() => {});
-    }
+    const { branch } = getRepoAndBranch();
+    const remoteUrl = `${UPDATE_GITHUB_URL}.git`;
+    await run(`git remote set-url origin "${remoteUrl}"`).catch(() => {});
 
     const oldRev = (await run('git rev-parse HEAD').catch(() => 'unknown')).trim();
     await run(`git fetch origin ${branch} --prune`);
@@ -107,10 +109,8 @@ function copyRecursive(src, dest, ignore = [], relative = '', outList = []) {
 }
 
 async function updateViaZip() {
-    const { repo, branch } = getRepoAndBranch();
-    if (!repo) throw new Error('No repo configured. Set UPDATE_REPO in env or settings.updateRepo in settings.js.');
-
-    const zipUrl    = `https://github.com/${repo}/archive/refs/heads/${branch}.zip`;
+    const { branch } = getRepoAndBranch();
+    const zipUrl    = `${UPDATE_GITHUB_URL}/archive/refs/heads/${branch}.zip`;
     const tmpDir    = path.join(process.cwd(), 'tmp');
     const zipPath   = path.join(tmpDir, 'update.zip');
     const extractTo = path.join(tmpDir, 'update_extract');
@@ -189,7 +189,7 @@ async function updateCommand(sock, chatId, message) {
 
     try {
         await sock.sendMessage(chatId, {
-            text: `🔄 *Checking for updates…*\n\n📦 Repo: \`${repo}\`\n🌿 Branch: \`${branch}\``
+            text: `🔄 *Checking for updates…*\n\n📦 Source: ${UPDATE_GITHUB_URL}\n🌿 Branch: \`${branch}\``
         }, { quoted: message });
 
         if (await hasGitRepo()) {
@@ -208,7 +208,7 @@ async function updateCommand(sock, chatId, message) {
             const { copiedFiles } = await updateViaZip();
             await run('npm install --no-audit --no-fund --legacy-peer-deps').catch(() => {});
             await sock.sendMessage(chatId, {
-                text: `✅ *Update applied!*\n\n📂 ${copiedFiles.length} files updated from \`${repo}\`\n\nRestarting…`
+                text: `✅ *Update applied!*\n\n📂 ${copiedFiles.length} files updated from:\n${UPDATE_GITHUB_URL}\n\nRestarting…`
             }, { quoted: message });
         }
 

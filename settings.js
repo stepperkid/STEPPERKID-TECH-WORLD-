@@ -12,20 +12,15 @@ const settings = {
   version: "1.0.5",
 
   // ─── UPDATE SOURCE ──────────────────────────────────────────────────────────
-  // When a user runs `.update`, the bot downloads and applies this zip file.
-  // Set this to your GitHub repo zip URL (replace USERNAME and REPO below):
-  //   GitHub format: https://github.com/USERNAME/REPO/archive/refs/heads/BRANCH.zip
-  //
-  // You can also override this at runtime without editing this file by setting
-  // the UPDATE_ZIP_URL environment variable in Replit Secrets.
-  //
-  // Users can also pass a one-off URL directly: .update https://your-url.zip
+  // The bot pulls updates directly from your public GitHub repository.
+  // Repo format: "owner/repo"   Branch: branch to pull from
   // ────────────────────────────────────────────────────────────────────────────
-  updateZipUrl: process.env.UPDATE_ZIP_URL || "https://github.com/stepperkid254/TitanBot-Core-/archive/refs/heads/main.zip",
+  updateRepo:   process.env.UPDATE_REPO   || "stepperkid/STEPPERKID-TECH-WORLD-",
+  updateBranch: process.env.UPDATE_BRANCH || "main",
 
   // ─── OPTIONAL SOCIAL LINKS ──────────────────────────────────────────────────
-  facebookUrl: '',   // e.g. https://facebook.com/yourpage
-  githubUrl:   'https://github.com/stepperkid254/TitanBot-Core-',
+  facebookUrl: '',
+  githubUrl:   'https://github.com/stepperkid/STEPPERKID-TECH-WORLD-',
   // ────────────────────────────────────────────────────────────────────────────
 };
 

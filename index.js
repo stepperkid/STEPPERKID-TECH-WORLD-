@@ -184,7 +184,7 @@ function normalizeCredsBuffers(obj) {
     return out;
 }
 
-const VALID_PREFIXES = ['TitanBot-Core:~', 'TRUTH-MD:~', 'TECHWORD-MD:~', 'COURTNEY:~'];
+const VALID_PREFIXES = ['TitanBot-Core:~', 'TRUTH-MD:~', 'TECHWORD-MD:~'];
 
 function stripSessionPrefix(sessionId) {
     for (const prefix of VALID_PREFIXES) {

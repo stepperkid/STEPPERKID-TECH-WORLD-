@@ -372,23 +372,25 @@ async function startXeonBotInc() {
 
     // Message handling
     XeonBotInc.ev.on('messages.upsert', async chatUpdate => {
-        lastActivity = Date.now();
-        const mek = chatUpdate.messages[0];
-        if (!mek.message) return;
-
-        if (mek.key.remoteJid === 'status@broadcast') {
-            await main.handleStatus(XeonBotInc, chatUpdate);
-            return;
-        }
-
         try {
+            lastActivity = Date.now();
+            if (!chatUpdate?.messages?.length) return;
+            const mek = chatUpdate.messages[0];
+            if (!mek?.message) return;
+
+            if (mek.key?.remoteJid === 'status@broadcast') {
+                await main.handleStatus(XeonBotInc, chatUpdate);
+                return;
+            }
+
             await main.handleMessages(XeonBotInc, chatUpdate, true);
-        } catch(e) { log(e.message, 'red', true); }
+        } catch(e) { log(`Message handler error: ${e.message}`, 'red', true); }
     });
 
     // Group participants update
     XeonBotInc.ev.on('group-participants.update', async (update) => {
-        await main.handleGroupParticipantUpdate(XeonBotInc, update);
+        try { await main.handleGroupParticipantUpdate(XeonBotInc, update); }
+        catch(e) { log(`Group update error: ${e.message}`, 'red', true); }
     });
 
     // Connection handling

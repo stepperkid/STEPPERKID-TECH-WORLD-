@@ -400,26 +400,47 @@ async function startXeonBotInc() {
         if (connection === 'close') {
             global.isBotConnected = false;
             const statusCode = lastDisconnect?.error?.output?.statusCode;
+            const errorMessage = lastDisconnect?.error?.message || '';
             const permanentLogout = statusCode === DisconnectReason.loggedOut || statusCode === 401;
 
+            // Detect bad session from error message (happens when session is corrupted)
+            const isBadSession = errorMessage.includes('bad session') ||
+                errorMessage.includes('invalid session') ||
+                errorMessage.includes('Multidevice mismatch') ||
+                statusCode === 500;
+
             if (permanentLogout) {
-                log(chalk.bgRed.black('🚨 Logged out / Invalid session'), 'white');
+                log(chalk.bgRed.black('🚨 Logged out / Invalid session — clearing and restarting'), 'white');
                 clearSessionFiles();
                 await delay(5000);
-                process.exit(1);
+                await tylor();
+            } else if (isBadSession) {
+                log(chalk.bgRed.black('⚠️ Bad/corrupt session detected — clearing and restarting fresh'), 'white');
+                clearSessionFiles();
+                await delay(5000);
+                await tylor();
             } else {
                 const reasonName = Object.entries(DisconnectReason).find(([, v]) => v === statusCode)?.[0] || 'unknown';
-                log(`Connection closed. Reason: ${reasonName} (${statusCode || 'unknown'}).`, 'yellow');
+                log(`Connection closed. Reason: ${reasonName} (${statusCode || 'unknown'}). Error: ${errorMessage || 'none'}`, 'yellow');
 
                 if (statusCode === DisconnectReason.connectionReplaced) {
-                    log('⚠️ Connection replaced by another session. Waiting before reconnect...', 'yellow');
+                    log('⚠️ Another WhatsApp session opened — waiting 15s before reconnect...', 'yellow');
                     scheduleReconnect(15000);
                 } else if (statusCode === DisconnectReason.restartRequired) {
-                    log('🔄 Restart required by server.', 'cyan');
+                    log('🔄 Restart required by WhatsApp server.', 'cyan');
                     scheduleReconnect(3000);
                 } else if (statusCode === DisconnectReason.timedOut || statusCode === DisconnectReason.connectionTimeout) {
                     const is408Handled = handle408Error(statusCode);
                     if (!is408Handled) scheduleReconnect(5000);
+                } else if (statusCode === DisconnectReason.connectionLost || statusCode === DisconnectReason.connectionClosed) {
+                    log('📶 Connection lost — reconnecting...', 'yellow');
+                    scheduleReconnect(5000);
+                } else if (statusCode === 428 || statusCode === 408) {
+                    log('⏱️ Connection timed out — reconnecting...', 'yellow');
+                    scheduleReconnect(8000);
+                } else if (!statusCode) {
+                    log('❓ Unknown disconnect — reconnecting in 10s...', 'yellow');
+                    scheduleReconnect(10000);
                 } else {
                     scheduleReconnect(5000);
                 }

@@ -193,6 +193,20 @@ const getSettingsCommand = require('./courtneycore/getsettings');
 const soraCommand = require('./courtneycore/sora');
 const pairCommand = require('./courtneycore/pair');
 const gitcloneCommand = require('./courtneycore/gitclone');
+const { setPaymentCommand, paymentCommand, delPaymentCommand } = require('./courtneycore/payment');
+const {
+    groupStatusCommand, getGroupPPCommand, tagAdminCommand,
+    openGroupCommand, closeGroupCommand, killAllCommand,
+    antiStickerCommand, antiPhotoCommand, antiPromoteCommand,
+    antiDemoteCommand, antiGroupMentionCommand, groupLinkCommand,
+    createGroupCommand, approveAllCommand, rejectAllCommand,
+    pendingRequestsCommand, muteAllCommand, unmuteAllCommand,
+    addMemberCommand, groupSizeCommand, getGroupDescCommand,
+    kickBotsCommand, lockSettingsCommand, mentionAllCommand,
+    groupAnnounceCommand, handleAntiStickerDetection,
+    handleAntiPhotoDetection, handleAntiGroupMentionDetection,
+    handleAntiPromoteDetection, handleAntiDemoteDetection,
+} = require('./courtneycore/groupcommands');
 
 // Global settings
 global.packname = settings.packname;
@@ -216,28 +230,29 @@ const channelInfo = {
 async function handleMessages(sock, messageUpdate, printLog) {
     try {
         const { messages, type } = messageUpdate;
-        if (type !== 'notify') return;
+        // Accept 'notify' (real-time) and 'append' (some Baileys versions use this for incoming msgs)
+        if (type !== 'notify' && type !== 'append') return;
 
         const message = messages[0];
         if (!message?.message) return;
 
-        // Unwrap ephemeral / viewOnce / documentWithCaption wrappers
-        // WhatsApp wraps messages in these containers when disappearing messages
-        // or view-once is enabled. Without unwrapping, the bot can't read the text.
-        if (message.message.ephemeralMessage) {
-            message.message = message.message.ephemeralMessage.message;
-        }
-        if (message.message.viewOnceMessage) {
-            message.message = message.message.viewOnceMessage.message;
-        }
-        if (message.message.viewOnceMessageV2) {
-            message.message = message.message.viewOnceMessageV2.message;
-        }
-        if (message.message.viewOnceMessageV2Extension) {
-            message.message = message.message.viewOnceMessageV2Extension.message;
-        }
-        if (message.message.documentWithCaptionMessage) {
-            message.message = message.message.documentWithCaptionMessage.message;
+        // Skip protocol/stub messages (group events, receipts, etc.)
+        if (message.messageStubType) return;
+
+        // Unwrap all known message wrapper types so the bot can read the inner text
+        const wrappers = [
+            'ephemeralMessage',
+            'viewOnceMessage',
+            'viewOnceMessageV2',
+            'viewOnceMessageV2Extension',
+            'documentWithCaptionMessage',
+            'interactiveMessage',
+        ];
+        for (const w of wrappers) {
+            if (message.message[w]?.message) {
+                message.message = message.message[w].message;
+                break;
+            }
         }
 
         if (!message.message) return;
@@ -287,14 +302,24 @@ async function handleMessages(sock, messageUpdate, printLog) {
             }
         }
 
-        let userMessage = (
-            message.message?.conversation?.trim() ||
-            message.message?.extendedTextMessage?.text?.trim() ||
-            message.message?.imageMessage?.caption?.trim() ||
-            message.message?.videoMessage?.caption?.trim() ||
-            message.message?.buttonsResponseMessage?.selectedButtonId?.trim() ||
-            ''
-        ).toLowerCase().replace(/\.\s+/g, '.').trim();
+        // Extract text from all known WhatsApp message formats
+        const extractText = (msg) =>
+            msg?.conversation?.trim() ||
+            msg?.extendedTextMessage?.text?.trim() ||
+            msg?.imageMessage?.caption?.trim() ||
+            msg?.videoMessage?.caption?.trim() ||
+            msg?.documentMessage?.caption?.trim() ||
+            msg?.buttonsResponseMessage?.selectedButtonId?.trim() ||
+            msg?.listResponseMessage?.singleSelectReply?.selectedRowId?.trim() ||
+            msg?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson?.trim() ||
+            msg?.templateButtonReplyMessage?.selectedId?.trim() ||
+            '';
+
+        let userMessage = extractText(message.message)
+            .toLowerCase().replace(/\.\s+/g, '.').trim();
+
+        // Preserve raw (original casing) text for commands that need it
+        const rawText = extractText(message.message);
 
         // Normalize custom prefix → '.' so all existing commands work unchanged
         const activePrefix = global.botPrefix || '.';
@@ -302,27 +327,27 @@ async function handleMessages(sock, messageUpdate, printLog) {
             userMessage = '.' + userMessage.slice(activePrefix.length);
         }
 
-        // Preserve raw message for commands like .tag that need original casing
-        const rawText = message.message?.conversation?.trim() ||
-            message.message?.extendedTextMessage?.text?.trim() ||
-            message.message?.imageMessage?.caption?.trim() ||
-            message.message?.videoMessage?.caption?.trim() ||
-            '';
-
+        // Resolve LID → phone number for display (fire-and-forget, never blocks handler)
         let senderNumber = senderId.replace(/@s\.whatsapp\.net|@g\.us|@lid/g, '').split(':')[0];
         let isLid = false;
         if (rawSenderId.endsWith('@lid') && senderId.endsWith('@lid')) {
-            const resolved = await resolvePhoneFromLid(sock, senderId);
-            if (resolved) {
-                senderNumber = resolved;
+            // Check cache synchronously first
+            const lidKey = senderId.split('@')[0].split(':')[0];
+            const cached = lidPhoneCache.get(lidKey);
+            if (cached && Date.now() - cached.ts < LID_CACHE_TTL) {
+                senderNumber = cached.phone;
             } else {
+                // Fire-and-forget resolution — never blocks the message handler
+                resolvePhoneFromLid(sock, senderId).catch(() => {});
                 isLid = true;
             }
         } else if (chatId.endsWith('@lid') && !isGroup) {
-            const resolved = await resolvePhoneFromLid(sock, chatId);
-            if (resolved) {
-                senderNumber = resolved;
+            const lidKey = chatId.split('@')[0].split(':')[0];
+            const cached = lidPhoneCache.get(lidKey);
+            if (cached && Date.now() - cached.ts < LID_CACHE_TTL) {
+                senderNumber = cached.phone;
             } else {
+                resolvePhoneFromLid(sock, chatId).catch(() => {});
                 isLid = true;
             }
         }
@@ -418,9 +443,12 @@ async function handleMessages(sock, messageUpdate, printLog) {
         if (isGroup) {
             if (userMessage) {
                 await handleBadwordDetection(sock, chatId, message, userMessage, senderId);
+                await handleAntiGroupMentionDetection(sock, chatId, message, senderId);
             }
             // Antilink checks message text internally, so run it even if userMessage is empty
             await Antilink(message, sock);
+            await handleAntiStickerDetection(sock, chatId, message);
+            await handleAntiPhotoDetection(sock, chatId, message, senderId);
         }
 
         // PM blocker: block non-owner DMs when enabled (do not ban)
@@ -1159,6 +1187,97 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 break;
             case userMessage === '.jid': await groupJidCommand(sock, chatId, message);
                 break;
+
+            // ── 25 NEW GROUP COMMANDS ──
+            case userMessage === '.groupstatus':
+                await groupStatusCommand(sock, chatId, message);
+                break;
+            case userMessage === '.getgpp':
+                await getGroupPPCommand(sock, chatId, message);
+                break;
+            case userMessage === '.tagadmin':
+                await tagAdminCommand(sock, chatId, message);
+                break;
+            case userMessage === '.open' || userMessage === '.opengc':
+                await openGroupCommand(sock, chatId, senderId, message);
+                break;
+            case userMessage === '.close' || userMessage === '.closegc':
+                await closeGroupCommand(sock, chatId, senderId, message);
+                break;
+            case userMessage === '.killall':
+                await killAllCommand(sock, chatId, senderId, message);
+                break;
+            case userMessage.startsWith('.antisticker'):
+                await antiStickerCommand(sock, chatId, senderId, userMessage, message);
+                break;
+            case userMessage.startsWith('.antiphoto'):
+                await antiPhotoCommand(sock, chatId, senderId, userMessage, message);
+                break;
+            case userMessage.startsWith('.antipromote'):
+                await antiPromoteCommand(sock, chatId, senderId, userMessage, message);
+                break;
+            case userMessage.startsWith('.antidemote'):
+                await antiDemoteCommand(sock, chatId, senderId, userMessage, message);
+                break;
+            case userMessage.startsWith('.antigroupmention'):
+                await antiGroupMentionCommand(sock, chatId, senderId, userMessage, message);
+                break;
+            case userMessage === '.link' || userMessage === '.grouplink':
+                await groupLinkCommand(sock, chatId, senderId, message);
+                break;
+            case userMessage.startsWith('.creategroup'):
+                await createGroupCommand(sock, chatId, senderId, userMessage, message);
+                break;
+            case userMessage === '.approveall':
+                await approveAllCommand(sock, chatId, senderId, message);
+                break;
+            case userMessage === '.rejectall':
+                await rejectAllCommand(sock, chatId, senderId, message);
+                break;
+            case userMessage === '.pendingrequests':
+                await pendingRequestsCommand(sock, chatId, senderId, message);
+                break;
+            case userMessage === '.muteall':
+                await muteAllCommand(sock, chatId, senderId, message);
+                break;
+            case userMessage === '.unmuteall':
+                await unmuteAllCommand(sock, chatId, senderId, message);
+                break;
+            case userMessage.startsWith('.addmember'):
+                await addMemberCommand(sock, chatId, senderId, userMessage, message);
+                break;
+            case userMessage === '.groupsize':
+                await groupSizeCommand(sock, chatId, message);
+                break;
+            case userMessage === '.getgdesc':
+                await getGroupDescCommand(sock, chatId, message);
+                break;
+            case userMessage === '.kickbots':
+                await kickBotsCommand(sock, chatId, senderId, message);
+                break;
+            case userMessage === '.locksettings' || userMessage === '.unlocksettings':
+                await lockSettingsCommand(sock, chatId, senderId, userMessage, message);
+                break;
+            case userMessage === '.mentionall':
+                await mentionAllCommand(sock, chatId, userMessage, message);
+                break;
+            case userMessage.startsWith('.groupannounce'):
+                await groupAnnounceCommand(sock, chatId, senderId, userMessage, message);
+                break;
+            // ── END NEW GROUP COMMANDS ──
+
+            // ── PAYMENT COMMANDS ──
+            case userMessage === '.payment':
+                await paymentCommand(sock, chatId, message);
+                break;
+            case userMessage.startsWith('.setpayment'):
+                await setPaymentCommand(sock, chatId, senderId, userMessage, message);
+                break;
+            case userMessage.startsWith('.delpayment'):
+                await delPaymentCommand(sock, chatId, senderId, userMessage, message);
+                break;
+            // ── END PAYMENT COMMANDS ──
+
             case userMessage.startsWith('.autotyping'):
                 await autotypingCommand(sock, chatId, message);
                 commandExecuted = true;
@@ -1377,13 +1496,15 @@ async function handleMessages(sock, messageUpdate, printLog) {
             await addCommandReaction(sock, message);
         }
     } catch (error) {
-        console.error('❌ Error in message handler:', error.message);
-        // Only try to send error message if we have a valid chatId
-        if (chatId) {
-            await sock.sendMessage(chatId, {
-                text: '❌ Failed to process command!',
-                ...channelInfo
-            });
+        console.error('❌ Error in message handler:', error.message, error.stack?.split('\n')[1]?.trim() || '');
+        // Only send error reply for actual command failures (not silent background events)
+        if (chatId && userMessage?.startsWith?.('.')) {
+            try {
+                await sock.sendMessage(chatId, {
+                    text: `❌ Command failed: ${error.message || 'Unknown error'}`,
+                    ...channelInfo
+                });
+            } catch (_) {}
         }
     }
 }
@@ -1406,6 +1527,7 @@ async function handleGroupParticipantUpdate(sock, update) {
 
         // Handle promotion events
         if (action === 'promote') {
+            await handleAntiPromoteDetection(sock, id, participants, action);
             if (!isPublic) return;
             await handlePromotionEvent(sock, id, participants, author);
             return;
@@ -1413,6 +1535,7 @@ async function handleGroupParticipantUpdate(sock, update) {
 
         // Handle demotion events
         if (action === 'demote') {
+            await handleAntiDemoteDetection(sock, id, participants, action);
             if (!isPublic) return;
             await handleDemotionEvent(sock, id, participants, author);
             return;
